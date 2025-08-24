@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado CEBRASPE - Competências do TCU</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do Tribunal de Contas da União</h1>
+            <p>Natureza e Competência</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de <span id="total-questions"></span></p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Simulado Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Simulado</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            // Questions from 1 - Natureza e Competência 1.html
+            {
+                question: "O Tribunal de Contas da União (TCU) é um órgão de controle interno, cuja competência é definida exclusivamente por esta Lei.",
+                answer: "Errado",
+                rationale: "A afirmação contém dois erros: o TCU é um órgão de controle externo, e sua competência deriva tanto da Constituição Federal quanto da Lei (Art. 1º, caput)."
+            },
+            {
+                question: "A competência do TCU para julgar contas abrange apenas os administradores da administração direta da União, excluindo as entidades da administração indireta.",
+                answer: "Errado",
+                rationale: "A competência do TCU, conforme o inciso I, estende-se também aos responsáveis por dinheiros, bens e valores das entidades da administração indireta."
+            },
+            {
+                question: "As fiscalizações do TCU somente podem ser iniciadas por solicitação do Congresso Nacional, de suas Casas ou de suas Comissões.",
+                answer: "Errado",
+                rationale: "A afirmação está incorreta, pois o TCU também pode iniciar fiscalizações por iniciativa própria, conforme o inciso II."
+            },
+            {
+                question: "Compete ao TCU julgar as contas prestadas anualmente pelo Presidente da República.",
+                answer: "Errado",
+                rationale: "A competência do TCU é de 'apreciar' as contas do Presidente, não de julgá-las, conforme o inciso III. O julgamento final é do Congresso Nacional."
+            },
+            {
+                question: "O acompanhamento da arrecadação da receita a cargo da União pode ser realizado pelo TCU mediante inspeções e auditorias.",
+                answer: "Certo",
+                rationale: "O inciso IV prevê expressamente que o acompanhamento da arrecadação da receita pode se dar por meio de inspeções e auditorias."
+            },
+            {
+                question: "A apreciação da legalidade dos atos de admissão de pessoal pelo TCU inclui as nomeações para cargo de provimento em comissão.",
+                answer: "Errado",
+                rationale: "O inciso V excetua expressamente as nomeações para cargo de provimento em comissão da apreciação para fins de registro."
+            },
+            {
+                question: "Compete ao TCU fiscalizar a entrega dos recursos referentes aos fundos de participação.",
+                answer: "Certo",
+                rationale: "O inciso VI estabelece que o TCU deve efetuar o cálculo das quotas e também fiscalizar a entrega dos respectivos recursos."
+            },
+            {
+                question: "O parecer prévio sobre as contas do Governo de Território Federal deve ser emitido pelo TCU no prazo de sessenta dias a contar de seu recebimento.",
+                answer: "Certo",
+                rationale: "O inciso VII fixa exatamente o prazo de sessenta dias para a emissão do parecer prévio sobre as contas de Território Federal."
+            },
+            {
+                question: "Ao representar ao poder competente sobre irregularidades, o TCU deve indicar o ato inquinado e definir responsabilidades, que podem incluir as de um Ministro de Estado.",
+                answer: "Certo",
+                rationale: "O inciso VIII descreve precisamente essa competência, incluindo a possibilidade de responsabilizar Ministros de Estado."
+            },
+            {
+                question: "A aplicação de sanções aos responsáveis por irregularidades é uma competência do TCU.",
+                answer: "Certo",
+                rationale: "O inciso IX atribui expressamente ao TCU a competência para aplicar aos responsáveis as sanções previstas em lei."
+            },
+            {
+                question: "Compete ao Congresso Nacional elaborar e alterar o Regimento Interno do TCU.",
+                answer: "Errado",
+                rationale: "O inciso X estabelece que a competência para elaborar e alterar seu Regimento Interno é do próprio Tribunal de Contas da União."
+            },
+            {
+                question: "A eleição do Presidente e do Vice-Presidente do TCU é uma atribuição do Presidente da República.",
+                answer: "Errado",
+                rationale: "A afirmação está incorreta, pois a eleição do Presidente e do Vice-Presidente é uma competência interna do TCU, conforme o inciso XI."
+            },
+            {
+                question: "A concessão de licença para tratamento de saúde a ministros do TCU por prazo superior a seis meses independe de inspeção por junta médica.",
+                answer: "Errado",
+                rationale: "A afirmação está incorreta, pois o inciso XII condiciona a concessão dessa licença à inspeção por junta médica."
+            },
+            {
+                question: "O TCU tem competência para fixar os vencimentos de seus ministros, auditores e membros do Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "A competência do TCU é de 'propor' a fixação dos vencimentos ao Congresso Nacional, que é quem decide, conforme o inciso XIII."
+            },
+            {
+                question: "Compete ao TCU propor ao Poder Executivo a criação, transformação e extinção de cargos do Quadro de Pessoal de sua Secretaria.",
+                answer: "Errado",
+                rationale: "A proposta para alteração no quadro de pessoal deve ser feita ao Congresso Nacional, não ao Poder Executivo, segundo o inciso XV."
+            },
+            {
+                question: "Apenas partidos políticos, associações ou sindicatos podem encaminhar denúncia ao TCU.",
+                answer: "Errado",
+                rationale: "A afirmação está incompleta e, portanto, incorreta, pois 'qualquer cidadão' também pode encaminhar denúncia, conforme o inciso XVI."
+            },
+            {
+                question: "O TCU pode decidir sobre consulta que lhe seja formulada por qualquer cidadão a respeito de dúvida na aplicação de dispositivos legais.",
+                answer: "Errado",
+                rationale: "A legitimidade para formular consulta ao TCU é restrita à 'autoridade competente', de acordo com o inciso XVII."
+            },
+            {
+                question: "No julgamento de contas, o TCU decidirá sobre a legalidade, a legitimidade e a economicidade dos atos de gestão, bem como sobre a aplicação de subvenções e a renúncia de receitas.",
+                answer: "Certo",
+                rationale: "O § 1º descreve exatamente este escopo de atuação para o Tribunal no julgamento de contas e na fiscalização."
+            },
+            {
+                question: "A resposta a uma consulta formulada ao TCU tem caráter meramente opinativo e não constitui prejulgamento da tese.",
+                answer: "Errado",
+                rationale: "A afirmação está duplamente incorreta, pois a resposta tem 'caráter normativo' e 'constitui prejulgamento da tese', segundo o § 2º."
+            },
+            {
+                question: "A resposta à consulta do TCU, embora constitua prejulgamento da tese, também prejulga o fato ou o caso concreto analisado.",
+                answer: "Errado",
+                rationale: "A afirmação está incorreta, pois o § 2º estabelece claramente que o prejulgamento se refere à tese, mas não ao fato ou caso concreto."
+            },
+            {
+                question: "O relatório do Ministro-Relator é considerado parte acessória das decisões do Tribunal, podendo ser dispensado.",
+                answer: "Errado",
+                rationale: "A afirmação está incorreta, pois o relatório do Ministro-Relator é parte 'essencial', e não acessória, das decisões do TCU, conforme o § 3º, I."
+            },
+            {
+                question: "A fundamentação com que o Ministro-Relator analisa as questões de fato e de direito é parte essencial das decisões do Tribunal.",
+                answer: "Certo",
+                rationale: "A afirmação está correta, pois a fundamentação é um dos três elementos essenciais da decisão, conforme o § 3º, II."
+            },
+            {
+                question: "O dispositivo com que o Ministro-Relator decide sobre o mérito do processo é parte essencial das decisões do Tribunal ou de suas Câmaras.",
+                answer: "Certo",
+                rationale: "A afirmação está correta, pois o dispositivo é o terceiro elemento listado como parte essencial da decisão no § 3º, III."
+            },
+            {
+                question: "A apreciação do TCU sobre as concessões de aposentadorias, reformas e pensões não abrange melhorias posteriores, mesmo que estas alterem o fundamento legal do ato.",
+                answer: "Errado",
+                rationale: "A afirmação está incorreta, pois a ressalva do inciso V é para melhorias que 'não alterem o fundamento legal', o que sugere que as que alteram estão sujeitas à apreciação."
+            },
+            {
+                question: "A fiscalização exercida pelo TCU, conforme o inciso II, abrange os aspectos contábil, financeiro, orçamentário, operacional e patrimonial.",
+                answer: "Certo",
+                rationale: "O inciso II lista exatamente esses cinco aspectos como objeto da fiscalização do Tribunal."
+            },
+
+            // Questions from 2 - Natureza e Competência 2.html
+            {
+                question: "A competência do Tribunal de Contas da União, órgão de controle externo, é definida unicamente pela Constituição Federal.",
+                answer: "Errado",
+                rationale: "O caput do Art. 1° é claro ao afirmar que a competência do TCU é definida 'nos termos da Constituição Federal e na forma estabelecida nesta Lei', indicando uma dupla fonte normativa."
+            },
+            {
+                question: "O julgamento de contas pelo TCU se restringe àquelas irregularidades que resultem em dano ao Erário, excluindo-se a análise das contas de administradores que não causaram prejuízo financeiro direto.",
+                answer: "Errado",
+                rationale: "O inciso I do Art. 1° estabelece duas situações distintas para o julgamento de contas: as dos administradores e demais responsáveis por valores públicos (de forma ordinária) e as daqueles que derem causa a dano ao Erário. Uma não exclui a outra."
+            },
+            {
+                question: "A fiscalização operacional e patrimonial a cargo do TCU pode ser iniciada por solicitação de uma Comissão parlamentar do Congresso Nacional.",
+                answer: "Certo",
+                rationale: "O inciso II do Art. 1° prevê que a fiscalização pode ser solicitada pelo 'Congresso Nacional, de suas Casas ou das respectivas Comissões', e abrange as modalidades contábil, financeira, orçamentária, operacional e patrimonial."
+            },
+            {
+                question: "O acompanhamento da arrecadação da receita pelo TCU se aplica somente às entidades da administração direta da União.",
+                answer: "Errado",
+                rationale: "O inciso IV do Art. 1° estende a competência de acompanhamento da receita à União e 'às entidades referidas no inciso I deste artigo', o que inclui a administração indireta."
+            },
+            {
+                question: "A apreciação da legalidade dos atos de admissão de pessoal, para fins de registro, abrange contratações a qualquer título, exceto as nomeações para cargos comissionados.",
+                answer: "Certo",
+                rationale: "O inciso V do Art. 1° é explícito ao determinar a apreciação dos atos de admissão 'a qualquer título', fazendo a ressalva apenas para 'as nomeações para cargo de provimento em comissão'."
+            },
+            {
+                question: "Melhorias posteriores em aposentadorias que não alterem o fundamento legal do ato concessório original são ressalvadas da apreciação para fins de registro pelo TCU.",
+                answer: "Certo",
+                rationale: "A parte final do inciso V do Art. 1° estabelece exatamente essa ressalva, indicando que tais melhorias não são objeto de nova análise para registro."
+            },
+            {
+                question: "Ao efetuar o cálculo das quotas dos fundos de participação, o TCU está dispensado de observar a legislação pertinente.",
+                answer: "Errado",
+                rationale: "O inciso VI do Art. 1° condiciona a atuação do TCU à observância da 'legislação pertinente'."
+            },
+            {
+                question: "A representação do TCU sobre irregularidades ou abusos apurados deve, obrigatoriamente, definir as responsabilidades de todas as partes envolvidas.",
+                answer: "Certo",
+                rationale: "Conforme o inciso VIII do Art. 1°, a representação deve indicar o ato inquinado e 'definindo responsabilidades'."
+            },
+            {
+                question: "A aplicação de sanções pelo TCU está limitada àquelas previstas nos artigos 57 a 61 da Lei mencionada.",
+                answer: "Certo",
+                rationale: "O inciso IX do Art. 1° especifica que o TCU aplicará 'as sanções previstas nos arts. 57 a 61 desta Lei'."
+            },
+            {
+                question: "A organização da Secretaria do TCU e o provimento de seus cargos são de competência do Congresso Nacional, mediante proposta do Tribunal.",
+                answer: "Errado",
+                rationale: "O inciso XIV do Art. 1° atribui ao próprio TCU a competência para organizar sua Secretaria e prover-lhe os cargos, observada a legislação. A proposta ao Congresso refere-se à criação de cargos (inciso XV)."
+            },
+            {
+                question: "A concessão de férias a ministros do TCU é uma competência do Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "O inciso XII do Art. 1° estabelece que a concessão de licença, férias e outros afastamentos aos ministros é competência do próprio Tribunal (como órgão colegiado)."
+            },
+            {
+                question: "A fixação da remuneração dos cargos do Quadro de Pessoal da Secretaria do TCU é realizada diretamente pelo Tribunal, na forma de seu Regimento Interno.",
+                answer: "Errado",
+                rationale: "De acordo com o inciso XV do Art. 1°, compete ao TCU propor ao Congresso Nacional a fixação da respectiva remuneração, e não fixá-la diretamente."
+            },
+            {
+                question: "Ao julgar contas e fiscalizar, o Tribunal deve se ater aos critérios de legalidade e legitimidade, não sendo de sua competência a análise da economicidade dos atos.",
+                answer: "Errado",
+                rationale: "O § 1° do Art. 1° é claro ao incluir a economicidade dos atos de gestão como um dos critérios a serem observados pelo Tribunal."
+            },
+            {
+                question: "A análise sobre a renúncia de receitas é uma das atribuições do TCU no exercício de sua competência de julgamento de contas e fiscalização.",
+                answer: "Certo",
+                rationale: "O § 1° do Art. 1° menciona expressamente que o Tribunal decidirá 'bem como sobre a aplicação de subvenções e a renúncia de receitas'."
+            },
+            {
+                question: "A resposta a uma consulta formulada por autoridade competente ao TCU, embora tenha caráter normativo, não vincula a administração pública, pois não constitui prejulgamento de tese.",
+                answer: "Errado",
+                rationale: "A afirmação contém dois erros. O § 2° do Art. 1° afirma que a resposta tem caráter normativo e constitui prejulgamento da tese. O caráter normativo gera vinculação."
+            },
+            {
+                question: "As conclusões do Ministério Público junto ao Tribunal devem constar no relatório do Ministro-Relator, que é parte essencial das decisões do TCU.",
+                answer: "Certo",
+                rationale: "O § 3°, inciso I, do Art. 1° estabelece que o relatório do Ministro-Relator, parte essencial da decisão, conterá, entre outras coisas, as conclusões do Ministério Público junto ao Tribunal."
+            },
+            {
+                question: "O dispositivo, parte da decisão em que o Ministro-Relator decide o mérito, é considerado parte essencial das decisões apenas do Plenário do Tribunal, mas não de suas Câmaras.",
+                answer: "Errado",
+                rationale: "O § 3° do Art. 1° afirma que o relatório, a fundamentação e o dispositivo são partes essenciais 'das decisões do Tribunal ou de suas Câmaras'."
+            },
+            {
+                question: "A fiscalização do TCU abrange exclusivamente as unidades dos poderes da União, não alcançando as fundações e sociedades instituídas pelo poder público federal.",
+                answer: "Errado",
+                rationale: "O inciso II do Art. 1° remete ao inciso anterior para definir o escopo da fiscalização. O inciso I inclui expressamente 'as fundações e sociedades instituídas e mantidas pelo poder público federal'."
+            },
+            {
+                question: "A dúvida suscitada na aplicação de dispositivos regulamentares sobre matéria de competência do TCU pode ser objeto de consulta ao Tribunal.",
+                answer: "Certo",
+                rationale: "O inciso XVII do Art. 1° menciona que a consulta pode ser formulada a respeito de dúvida na aplicação de 'dispositivos legais e regulamentares'."
+            },
+            {
+                question: "O parecer do técnico responsável pela análise do processo e o parecer das chefias imediatas da Unidade Técnica são elementos que compõem a instrução, a qual subsidia o relatório do Ministro-Relator.",
+                answer: "Certo",
+                rationale: "O § 3°, inciso I, do Art. 1° detalha que o relatório do Ministro-Relator conterá as conclusões da instrução, a qual é formada, entre outros, pelo 'Relatório da equipe de auditoria ou do técnico responsável pela análise do processo, bem como do parecer das chefias imediatas, da Unidade Técnica'."
+            },
+            {
+                question: "Cabe ao TCU propor ao Presidente da República a fixação de vencimentos dos ministros e auditores do Tribunal.",
+                answer: "Errado",
+                rationale: "Conforme o inciso XIII do Art. 1°, a proposta de fixação de vencimentos é encaminhada ao Congresso Nacional, e não ao Presidente da República."
+            },
+            {
+                question: "A eleição e a posse do Presidente e do Vice-Presidente do TCU são competências do próprio Tribunal.",
+                answer: "Certo",
+                rationale: "O inciso XI do Art. 1° estabelece que compete ao TCU 'eleger seu Presidente e seu Vice-Presidente, e dar-lhes posse'."
+            },
+            {
+                question: "A resposta a uma consulta formulada ao TCU constitui prejulgamento não apenas da tese, mas também do fato ou caso concreto que a originou.",
+                answer: "Errado",
+                rationale: "O § 2° do Art. 1° faz uma ressalva expressa: 'constitui prejulgamento da tese, mas não do fato ou caso concreto'."
+            },
+            {
+                question: "O TCU tem competência para julgar as contas de qualquer pessoa que causar perda ou extravio de bens públicos da União, mesmo que não seja um administrador público.",
+                answer: "Certo",
+                rationale: "A parte final do inciso I do Art. 1° amplia a competência do TCU para julgar as contas 'daqueles que derem causa a perda, extravio ou outra irregularidade de que resulte dano ao Erário', não se limitando à figura do administrador."
+            },
+            {
+                question: "A fundamentação das decisões do TCU, na qual se analisam as questões de direito, é parte essencial do acórdão, mas a análise das questões de fato é considerada acessória.",
+                answer: "Errado",
+                rationale: "O § 3°, inciso II, do Art. 1° estabelece que a fundamentação, como parte essencial, deve analisar 'as questões de fato e de direito'."
+            },
+
+            // Questions from 2 - Natureza e Competência 3.html
+            {
+                question: "Para o desempenho de sua competência, o Tribunal de Contas da União receberá, em cada exercício, o rol de responsáveis e suas alterações, sendo a forma para tal recebimento estabelecida em lei específica.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 2º, a forma para o recebimento do rol de responsáveis e outros documentos é estabelecida no Regimento Interno do Tribunal, e não em lei específica."
+            },
+            {
+                question: "Ao Tribunal de Contas da União assiste o poder regulamentar no âmbito de sua competência e jurisdição.",
+                answer: "Certo",
+                rationale: "A assertiva é uma transcrição literal do início do Art. 3º, que confere expressamente o poder regulamentar ao Tribunal."
+            },
+            {
+                question: "O Tribunal de Contas da União poderá solicitar ao Ministro de Estado supervisor da área, ou à autoridade de nível hierárquico equivalente, quaisquer elementos que julgar convenientes, ainda que não sejam indispensáveis ao exercício de sua competência.",
+                answer: "Errado",
+                rationale: "O Parágrafo único do Art. 2º é claro ao especificar que os elementos que podem ser solicitados são aqueles \"indispensáveis ao exercício de sua competência\", e não quaisquer elementos julgados convenientes."
+            },
+            {
+                question: "O cumprimento dos atos e instruções normativas expedidos pelo Tribunal de Contas da União é obrigatório, sob pena de responsabilidade.",
+                answer: "Certo",
+                rationale: "A questão reflete a parte final do Art. 3º, que estabelece a força cogente dos atos e instruções normativas do Tribunal, prevendo a responsabilização em caso de descumprimento."
+            },
+            {
+                question: "O recebimento, pelo Tribunal, do rol de responsáveis e suas alterações é uma faculdade da qual o órgão pode se abster a depender do exercício.",
+                answer: "Errado",
+                rationale: "O Art. 2º utiliza o verbo \"receberá\", no futuro do presente, indicando uma ação certa e obrigatória que ocorrerá \"em cada exercício\", não se tratando de uma faculdade."
+            },
+            {
+                question: "A expedição de atos e instruções normativas pelo TCU pode versar tanto sobre matéria de suas atribuições quanto sobre a organização dos processos que lhe devam ser submetidos.",
+                answer: "Certo",
+                rationale: "A afirmativa corresponde exatamente ao que dispõe o Art. 3º, detalhando os dois âmbitos sobre os quais o Tribunal pode normatizar."
+            },
+            {
+                question: "Caso necessite de elementos adicionais, o Tribunal de Contas da União deve solicitá-los diretamente à unidade técnica responsável, sendo vedado o contato com Ministros de Estado.",
+                answer: "Errado",
+                rationale: "A assertiva contraria o Parágrafo único do Art. 2º, que prevê expressamente a possibilidade de o Tribunal solicitar ao Ministro de Estado supervisor da área os elementos indispensáveis."
+            },
+            {
+                question: "Além do rol de responsáveis, o Tribunal poderá receber outros documentos ou informações que considerar necessários para o desempenho de sua competência.",
+                answer: "Certo",
+                rationale: "De acordo com o Art. 2º, o Tribunal receberá o rol de responsáveis \"e outros documentos ou informações que considerar necessários\", conforme a assertiva."
+            },
+            {
+                question: "O poder regulamentar assistido ao Tribunal de Contas da União o autoriza a expedir atos normativos, mas não instruções normativas.",
+                answer: "Errado",
+                rationale: "O Art. 3º é explícito ao afirmar que o Tribunal pode expedir \"atos e instruções normativas\", incluindo ambas as espécies em sua competência regulamentar."
+            },
+            {
+                question: "A solicitação de elementos indispensáveis a um Ministro de Estado é uma prerrogativa do Tribunal, que poderá exercê-la conforme a necessidade.",
+                answer: "Certo",
+                rationale: "O uso do verbo \"poderá\" no Parágrafo único do Art. 2º indica que a solicitação é uma faculdade ou prerrogativa do Tribunal, a ser usada quando julgar necessário."
+            },
+            {
+                question: "A organização dos processos que tramitam no Tribunal de Contas da União é matéria sujeita exclusivamente a deliberação do Congresso Nacional, não cabendo ao Tribunal regulamentá-la.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 3º, o próprio Tribunal tem competência para expedir atos e instruções normativas \"sobre a organização dos processos que lhe devam ser submetidos\"."
+            },
+            {
+                question: "A definição sobre quais informações, além do rol de responsáveis, são necessárias ao desempenho da competência do TCU é um ato discricionário do próprio Tribunal.",
+                answer: "Certo",
+                rationale: "O Art. 2º estabelece que o Tribunal receberá \"outros documentos ou informações que considerar necessários\", conferindo ao próprio Tribunal a prerrogativa de definir essa necessidade."
+            },
+            {
+                question: "Os atos e instruções normativas expedidos pelo Tribunal têm caráter meramente opinativo, não obrigando ao seu cumprimento.",
+                answer: "Errado",
+                rationale: "O Art. 3º afirma que os atos e instruções normativas do TCU são de cumprimento obrigatório (\"obrigando ao seu cumprimento, sob pena de responsabilidade\")."
+            },
+            {
+                question: "O Tribunal receberá o rol de responsáveis e outros documentos necessários exclusivamente na forma estabelecida na Constituição Federal.",
+                answer: "Errado",
+                rationale: "A parte final do Art. 2º estabelece que o recebimento de tais documentos se dará \"na forma estabelecida no Regimento Interno\"."
+            },
+            {
+                question: "O poder regulamentar do TCU está circunscrito ao âmbito de sua competência e jurisdição.",
+                answer: "Certo",
+                rationale: "A questão está em estrita conformidade com o início do Art. 3º, que delimita o alcance do poder regulamentar do Tribunal (\"no âmbito de sua competência e jurisdição\")."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            totalQuestionsEl.innerText = quizData.length;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        loadQuestion();
+    </script>
+
+</body>
+</html>
