@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tomada e Prestação de Contas</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Tomada e Prestação de Contas</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "Todas as pessoas indicadas nos incisos I a IX do art. 5° desta Lei estão sujeitas à tomada de contas.",
+                answer: "Errado",
+                rationale: "O Art. 6° especifica que estão sujeitas à tomada de contas as pessoas indicadas nos incisos I a VI do art. 5°, e não todos os incisos."
+            },
+            {
+                question: "Uma pessoa sujeita à tomada de contas pode ser liberada dessa responsabilidade por decisão da autoridade administrativa a que está vinculada, desde que devidamente justificada.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 6°, a liberação da responsabilidade de prestar contas só pode ocorrer por decisão do Tribunal de Contas da União, ressalvada a apreciação pelo Poder Judiciário."
+            },
+            {
+                question: "As contas dos administradores e responsáveis devem ser submetidas a julgamento do TCU bienalmente.",
+                answer: "Errado",
+                rationale: "O Art. 7° determina que as contas serão anualmente submetidas a julgamento do Tribunal."
+            },
+            {
+                question: "As normas para organização da tomada ou prestação de contas são estabelecidas no Regimento Interno do TCU.",
+                answer: "Errado",
+                rationale: "O Art. 7° estabelece que as contas serão organizadas de acordo com normas estabelecidas em instrução normativa, e não no Regimento Interno."
+            },
+            {
+                question: "A análise de contas pelo TCU deve incluir os recursos orçamentários, mas exclui os recursos extra-orçamentários.",
+                answer: "Errado",
+                rationale: "O parágrafo único do Art. 7° é explícito ao determinar que devem ser incluídos todos os recursos, orçamentários e extra-orçamentários."
+            },
+            {
+                question: "A omissão no dever de prestar contas é uma das hipóteses que ensejam a instauração de tomada de contas especial.",
+                answer: "Certo",
+                rationale: "O Art. 8° lista a \"omissão no dever de prestar contas\" como o primeiro dos motivos para a instauração da tomada de contas especial."
+            },
+            {
+                question: "A autoridade administrativa competente que não adota providências para instaurar a tomada de contas especial responde subsidiariamente pelo dano.",
+                answer: "Errado",
+                rationale: "O Art. 8° estabelece que a autoridade administrativa competente responde sob pena de responsabilidade solidária, e não subsidiária."
+            },
+            {
+                question: "A prática de um ato de gestão, ainda que antieconômico, só ensejará a instauração de tomada de contas especial se houver dano ao Erário.",
+                answer: "Certo",
+                rationale: "O Art. 8° condiciona a instauração da tomada de contas especial, no caso de ato ilegal, ilegítimo ou antieconômico, à ocorrência de resultado danoso, ao prever \"de que resulte dano ao Erário\"."
+            },
+            {
+                question: "Caso a autoridade administrativa competente não instaure a tomada de contas especial, o próprio Tribunal de Contas da União a instaurará diretamente.",
+                answer: "Errado",
+                rationale: "Conforme o § 1° do Art. 8°, se a autoridade não agir, o Tribunal determinará a instauração, fixando um prazo para que a autoridade cumpra a decisão, em vez de instaurá-la diretamente."
+            },
+            {
+                question: "A finalidade da tomada de contas especial é exclusivamente a quantificação do dano ao Erário.",
+                answer: "Errado",
+                rationale: "O Art. 8° define uma finalidade tríplice para a tomada de contas especial: \"apuração dos fatos, identificação dos responsáveis e quantificação do dano\"."
+            },
+            {
+                question: "Se o dano ao Erário for de valor superior à quantia fixada pelo TCU, a tomada de contas especial será anexada ao processo da respectiva prestação de contas anual para julgamento em conjunto.",
+                answer: "Errado",
+                rationale: "Esta é a regra para danos de valor inferior. Conforme o § 2° do Art. 8°, se o dano for de valor igual ou superior ao fixado, a tomada de contas especial será desde logo encaminhada ao Tribunal para julgamento."
+            },
+            {
+                question: "O valor de referência para decidir o rito de encaminhamento da tomada de contas especial é fixado pelo TCU anualmente.",
+                answer: "Certo",
+                rationale: "O § 2° do Art. 8° afirma que a quantia de referência é \"fixada pelo Tribunal em cada ano civil\"."
+            },
+            {
+                question: "A tomada de contas especial cujo dano apurado seja de valor inferior ao de referência será arquivada pela autoridade administrativa, sem a necessidade de envio ao TCU.",
+                answer: "Errado",
+                rationale: "O § 3° do Art. 8° determina que, nesse caso, a tomada de contas especial será anexada ao processo da respectiva tomada ou prestação de contas anual para julgamento em conjunto pelo TCU."
+            },
+            {
+                question: "O relatório de gestão é um dos elementos que devem integrar a tomada ou prestação de contas.",
+                answer: "Certo",
+                rationale: "O Art. 9°, inciso I, lista o \"relatório de gestão\" como um dos componentes obrigatórios."
+            },
+            {
+                question: "O pronunciamento do Ministro de Estado supervisor da área é um elemento facultativo na composição da tomada de contas.",
+                answer: "Errado",
+                rationale: "O Art. 9°, inciso IV, estabelece o pronunciamento do Ministro de Estado ou autoridade equivalente como um dos elementos que integrarão a tomada de contas."
+            },
+            {
+                question: "A lista de elementos que integram a tomada de contas, apresentada no artigo 9º, é exaustiva.",
+                answer: "Errado",
+                rationale: "O caput do Art. 9° afirma que integrarão a tomada de contas os elementos listados, \"dentre outros elementos estabelecidos no Regimento Interno\", indicando que o rol é exemplificativo."
+            },
+            {
+                question: "O parecer do dirigente do órgão de controle interno deve constar no relatório e certificado de auditoria.",
+                answer: "Certo",
+                rationale: "O Art. 9°, inciso III, especifica que o relatório e certificado de auditoria virão \"com o parecer do dirigente do órgão de controle interno\"."
+            },
+            {
+                question: "Nas tomadas e prestações de contas anuais, devem ser incluídos recursos geridos pela unidade ou entidade, mas não aqueles por ela não geridos.",
+                answer: "Errado",
+                rationale: "O parágrafo único do Art. 7° determina que devem ser incluídos todos os recursos, \"geridos ou não pela unidade ou entidade\"."
+            },
+            {
+                question: "A não comprovação da aplicação de recursos repassados pela União a um município mediante convênio é motivo para a instauração de tomada de contas especial.",
+                answer: "Certo",
+                rationale: "O Art. 8° menciona expressamente \"a não comprovação da aplicação dos recursos repassados pela União, na forma prevista no inciso VII do art. 5° desta Lei\" como causa para a instauração da TCE."
+            },
+            {
+                question: "A autoridade administrativa deve aguardar o trânsito em julgado de processo administrativo disciplinar para, então, adotar providências com vistas à instauração da tomada de contas especial.",
+                answer: "Errado",
+                rationale: "O Art. 8° determina que a autoridade administrativa competente deverá adotar as providências imediatamente após a ciência do fato."
+            },
+            {
+                question: "O relatório e certificado de auditoria que integram as contas devem indicar as medidas adotadas para corrigir as faltas encontradas.",
+                answer: "Certo",
+                rationale: "O Art. 9°, inciso III, estabelece que o parecer consignará as irregularidades, \"indicando as medidas adotadas para corrigir as faltas encontradas\"."
+            },
+            {
+                question: "A tomada de contas especial aplica-se em caso de desfalque de dinheiros públicos, mas não em caso de desvio de bens ou valores públicos.",
+                answer: "Errado",
+                rationale: "O Art. 8° abrange a ocorrência de \"desfalque ou desvio de dinheiros, bens ou valores públicos\"."
+            },
+            {
+                question: "O relatório do tomador de contas é um elemento que integrará a prestação de contas em todas as hipóteses.",
+                answer: "Errado",
+                rationale: "O Art. 9°, inciso II, condiciona a inclusão deste relatório à sua pertinência, ao afirmar \"quando couber\"."
+            },
+            {
+                question: "O julgamento das contas anuais dos administradores pelo TCU ocorre sob a forma de tomada ou prestação de contas.",
+                answer: "Certo",
+                rationale: "O Art. 7° estabelece que as contas serão submetidas a julgamento \"sob forma de tomada ou prestação de contas\"."
+            },
+            {
+                question: "Mesmo que uma pessoa seja absolvida na esfera judicial por falta de provas, o TCU não pode liberá-la da responsabilidade de prestar contas, pois sua decisão é soberana.",
+                answer: "Errado",
+                rationale: "O Art. 6° inicia com a ressalva \"ressalvado o disposto no inciso XXXV do art. 5° da Constituição Federal\", que garante o princípio da inafastabilidade da jurisdição. Uma decisão judicial transitada em julgado que negue a autoria ou a existência do fato vincula a esfera administrativa."
+            },
+            {
+                question: "O pronunciamento exigido no artigo 9º pode ser tanto do Ministro de Estado supervisor da área quanto de autoridade de nível hierárquico equivalente.",
+                answer: "Certo",
+                rationale: "O Art. 9°, inciso IV, apresenta as duas possibilidades: \"pronunciamento do Ministro de Estado supervisor da área ou da autoridade de nível hierárquico equivalente\"."
+            },
+            {
+                question: "A instauração de Tomada de Contas Especial é obrigatória mesmo que o ato ilegal praticado pelo gestor não resulte em dano ao Erário.",
+                answer: "Errado",
+                rationale: "O Art. 8° é claro ao vincular a instauração da TCE, no caso de ato ilegal, ilegítimo ou antieconômico, à condição de que dele \"resulte dano ao Erário\"."
+            },
+            {
+                question: "O parecer do dirigente do órgão de controle interno deve consignar qualquer irregularidade ou ilegalidade constatada durante a auditoria.",
+                answer: "Certo",
+                rationale: "O Art. 9°, inciso III, determina que o parecer \"consignará qualquer irregularidade ou ilegalidade constatada\"."
+            },
+            {
+                question: "A responsabilidade da autoridade administrativa omissa é solidária com os responsáveis pelo dano, o que significa que o TCU poderá cobrar a integralidade da dívida de qualquer um deles.",
+                answer: "Certo",
+                rationale: "O Art. 8° prevê a \"responsabilidade solidária\". O conceito de solidariedade passiva implica que o credor (a União) pode exigir o pagamento total da dívida de um ou de alguns dos devedores, à sua escolha."
+            },
+            {
+                question: "Se o dano for de valor exatamente igual à quantia fixada pelo Tribunal, a tomada de contas especial será anexada ao processo de contas anual.",
+                answer: "Errado",
+                rationale: "O § 2° do Art. 8° estabelece que a tomada de contas será encaminhada imediatamente ao TCU para julgamento se o dano for de valor igual ou superior à quantia fixada. A anexação ocorre apenas se o valor for inferior."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        loadQuestion();
+    </script>
+
+</body>
+</html>
