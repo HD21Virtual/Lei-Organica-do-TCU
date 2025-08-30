@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jurisdição do TCU (Arts. 4º e 5º)</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Jurisdição</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A jurisdição do Tribunal de Contas da União é própria, porém não é privativa, sendo compartilhada com órgãos do Poder Judiciário em matérias de sua competência.",
+                answer: "Errado",
+                rationale: "O Art. 4° estabelece que o TCU tem jurisdição própria e privativa, o que significa que, no âmbito de sua competência, ele a exerce com exclusividade."
+            },
+            {
+                question: "A jurisdição do TCU abrange apenas pessoas físicas que administrem dinheiros públicos, excluindo-se aquelas que apenas arrecadam ou guardam tais valores.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 5°, inciso I, a jurisdição abrange qualquer pessoa física que utilize, arrecade, guarde, gerencie ou administre dinheiros, bens e valores públicos, sendo o rol de ações mais amplo."
+            },
+            {
+                question: "Dirigentes de empresas que venham a integrar provisoriamente o patrimônio da União estão sujeitos à jurisdição do TCU.",
+                answer: "Certo",
+                rationale: "O Art. 5°, inciso III, inclui expressamente na jurisdição do Tribunal os dirigentes ou liquidantes de empresas que \"de qualquer modo venham a integrar, provisória ou permanentemente, o patrimônio da União\"."
+            },
+            {
+                question: "A jurisdição do TCU alcança os responsáveis pelas contas de empresas supranacionais, desde que a participação da União no capital social seja direta.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso IV, especifica que a participação da União no capital social da empresa supranacional pode ser de forma direta ou indireta."
+            },
+            {
+                question: "Entidades de direito privado que recebem contribuições parafiscais e prestam serviço de interesse público ou social têm seus responsáveis sujeitos à jurisdição do TCU.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao texto do Art. 5°, inciso V, que estabelece essas duas condições (receber contribuições parafiscais e prestar serviço de interesse público/social) para submeter a entidade à jurisdição do Tribunal."
+            },
+            {
+                question: "A responsabilidade dos sucessores dos administradores perante o TCU é ilimitada, respondendo com seu patrimônio particular por todo o débito apurado, independentemente do valor transferido por herança.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso VIII, limita a responsabilidade dos sucessores, determinando que ela se dará \"até o limite do valor do patrimônio transferido\", em conformidade com a Constituição Federal."
+            },
+            {
+                question: "Os responsáveis pela aplicação de recursos repassados pela União a Municípios, por meio de convênios, estão sujeitos à jurisdição do Tribunal de Contas da União.",
+                answer: "Certo",
+                rationale: "O Art. 5°, inciso VII, estabelece expressamente a jurisdição do TCU sobre os responsáveis pela aplicação de recursos repassados pela União a Estado, ao Distrito Federal ou a Município."
+            },
+            {
+                question: "Qualquer pessoa física que der causa a perda ou extravio que resulte em dano ao Erário está sujeita à jurisdição do TCU, mesmo que não seja um agente público.",
+                answer: "Certo",
+                rationale: "O Art. 5°, inciso II, abrange \"aqueles que derem causa a perda, extravio ou outra irregularidade de que resulte dano ao Erário\", sem restringir essa condição a agentes públicos."
+            },
+            {
+                question: "A responsabilidade dos representantes da União na assembleia geral de estatais e dos membros dos Conselhos Fiscal e de Administração, por atos de gestão ruinosa, é solidária.",
+                answer: "Certo",
+                rationale: "O Art. 5°, inciso IX, determina que os representantes da União respondem solidariamente com os membros dos Conselhos Fiscal e de Administração pela prática de tais atos."
+            },
+            {
+                question: "A jurisdição do Tribunal de Contas da União restringe-se ao Distrito Federal, não alcançando todo o território nacional.",
+                answer: "Errado",
+                rationale: "O Art. 4º afirma categoricamente que o TCU tem jurisdição \"em todo o território nacional\"."
+            },
+            {
+                question: "A jurisdição do TCU abrange as pessoas físicas ou jurídicas sujeitas à sua competência, mas não as matérias, que são definidas pelo Congresso Nacional.",
+                answer: "Errado",
+                rationale: "O Art. 4° estabelece que a jurisdição do TCU se estende sobre \"as pessoas e matérias sujeitas à sua competência\", indicando que ambos são objetos de sua jurisdição."
+            },
+            {
+                question: "Aquele que, em nome da União, assume obrigações de natureza pecuniária, está sujeito à jurisdição do Tribunal de Contas da União.",
+                answer: "Certo",
+                rationale: "A afirmação está correta e corresponde à parte final do Art. 5°, inciso I, que inclui sob a jurisdição do TCU \"quem, em nome desta [da União], assuma obrigações de natureza pecuniária\"."
+            },
+            {
+                question: "A jurisdição do TCU alcança apenas quem administra bens e valores públicos, não se estendendo àqueles que lidam com bens e valores pelos quais a União apenas responda.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso I, é claro ao abranger quem administre dinheiros, bens e valores públicos ou \"pelos quais a União responda\", incluindo esta última hipótese em sua jurisdição."
+            },
+            {
+                question: "Os liquidantes de empresas sob intervenção federal são alcançados pela jurisdição do TCU.",
+                answer: "Certo",
+                rationale: "O Art. 5°, inciso III, inclui expressamente na jurisdição do Tribunal \"os dirigentes ou liquidantes das empresas encampadas ou sob intervenção\"."
+            },
+            {
+                question: "Entidades com personalidade jurídica de direito privado que prestam serviço de interesse público, ainda que não recebam contribuições parafiscais, estão submetidas à jurisdição do TCU.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso V, exige o cumprimento de dois requisitos cumulativos para submeter a entidade privada à jurisdição do TCU: que ela receba contribuições parafiscais e preste serviço de interesse público ou social."
+            },
+            {
+                question: "A jurisdição do TCU está restrita às hipóteses taxativamente listadas nos incisos do artigo 5º, não alcançando pessoas cujos atos sejam submetidos à sua fiscalização por outra lei.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso VI, funciona como uma cláusula de encerramento, incluindo na jurisdição do Tribunal \"todos aqueles que lhe devam prestar contas ou cujos atos estejam sujeitos à sua fiscalização por expressa disposição de Lei\", ampliando o rol para além dos incisos anteriores."
+            },
+            {
+                question: "A transferência de recursos da União para um Estado, por meio de um ajuste, submete os responsáveis pela aplicação desses valores à jurisdição do TCU.",
+                answer: "Certo",
+                rationale: "A afirmação está correta, pois o Art. 5°, inciso VII, menciona diversos instrumentos de repasse, incluindo \"convênio, acordo, ajuste ou outros instrumentos congêneres\"."
+            },
+            {
+                question: "A responsabilidade dos sucessores dos administradores faltosos é subsidiária, só podendo ser acionada após esgotadas as tentativas de cobrança contra o espólio.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso VIII, não estabelece responsabilidade subsidiária, mas sim uma responsabilidade direta dos sucessores, embora limitada ao valor do patrimônio transferido. A natureza da responsabilidade é tratada pela legislação civil e processual, mas o artigo não impõe a condição de subsidiariedade."
+            },
+            {
+                question: "A responsabilidade solidária dos representantes da União em empresas estatais abrange apenas os atos de gestão ruinosa, excluindo-se os atos de liberalidade.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso IX, estabelece a responsabilidade solidária pela prática de atos de \"gestão ruinosa ou liberalidade à custa das respectivas sociedades\"."
+            },
+            {
+                question: "Em caso de gestão ruinosa em uma sociedade de economia mista, a responsabilidade perante o TCU é exclusiva dos membros dos Conselhos Fiscal e de Administração.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso IX, determina que a responsabilidade é solidária entre os representantes da União ou do Poder Público na Assembleia Geral e os membros dos Conselhos Fiscal e de Administração."
+            },
+            {
+                question: "A jurisdição do TCU abrange os responsáveis pela aplicação de recursos repassados pela União a estados e municípios, mas exclui os repasses feitos ao Distrito Federal.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso VII, inclui textualmente os recursos repassados \"a Estado, ao Distrito Federal ou a Município\"."
+            },
+            {
+                question: "A jurisdição do TCU sobre os responsáveis pelas contas de empresas supranacionais depende da forma de participação da União em seu capital, sendo válida somente se houver previsão no respectivo tratado constitutivo.",
+                answer: "Certo",
+                rationale: "A afirmação está correta. A parte final do Art. 5°, inciso IV, estabelece que a jurisdição do TCU sobre essas empresas se dará \"nos termos do tratado constitutivo\"."
+            },
+            {
+                question: "Apenas os dirigentes de empresas que venham a integrar permanentemente o patrimônio da União estão sujeitos à jurisdição do TCU, excluindo-se os casos de integração provisória.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso III, é explícito ao abranger empresas que venham a integrar, \"provisória ou permanentemente\", o patrimônio da União ou de outra entidade pública federal."
+            },
+            {
+                question: "A jurisdição do TCU abrange não apenas quem gerencia dinheiro público, mas também quem gerencia bens e valores públicos.",
+                answer: "Certo",
+                rationale: "O Art. 5°, inciso I, detalha que a jurisdição alcança quem \"utilize, arrecade, guarde, gerencie ou administre dinheiros, bens e valores públicos\"."
+            },
+            {
+                question: "A responsabilidade solidária dos representantes da União em assembleias de estatais aplica-se apenas quando estes participam do Conselho de Administração, e não do Conselho Fiscal.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso IX, estabelece a responsabilidade solidária dos representantes da União com os membros dos \"Conselhos Fiscal e de Administração\", incluindo ambos os órgãos."
+            },
+            {
+                question: "A submissão de uma entidade privada à jurisdição do TCU ocorre quando ela presta serviço de interesse público e, cumulativamente, serviço de interesse social.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso V, utiliza a conjunção alternativa \"ou\", indicando que basta a prestação de serviço de interesse público ou social, somada ao recebimento de contribuições parafiscais."
+            },
+            {
+                question: "A jurisdição do TCU alcançará qualquer pessoa que, por força de uma lei específica, deva prestar contas ao Tribunal.",
+                answer: "Certo",
+                rationale: "A afirmação reflete o disposto no Art. 5°, inciso VI, que abrange \"todos aqueles que lhe devam prestar contas ou cujos atos estejam sujeitos à sua fiscalização por expressa disposição de Lei\"."
+            },
+            {
+                question: "A limitação da responsabilidade dos sucessores ao patrimônio transferido é uma norma que consta apenas na referida Lei, não tendo amparo direto na Constituição Federal.",
+                answer: "Errado",
+                rationale: "O próprio Art. 5°, inciso VIII, fundamenta a limitação da responsabilidade fazendo remissão expressa à Constituição, ao citar \"nos termos do inciso XLV do art. 5° da Constituição Federal\"."
+            },
+            {
+                question: "Para que o TCU exerça sua jurisdição sobre quem causou dano ao Erário, é necessário que a irregularidade cometida seja exclusivamente perda ou extravio de bens.",
+                answer: "Errado",
+                rationale: "O Art. 5°, inciso II, é mais amplo, referindo-se a \"perda, extravio ou outra irregularidade de que resulte dano ao Erário\", incluindo outras condutas além das especificadas."
+            },
+            {
+                question: "A jurisdição do TCU abrange dirigentes de empresas que passam a integrar o patrimônio de qualquer entidade pública federal, não se limitando àquelas que integram o patrimônio da União.",
+                answer: "Certo",
+                rationale: "O Art. 5°, inciso III, estabelece a jurisdição sobre empresas que \"venham a integrar (...) o patrimônio da União ou de outra entidade pública federal\"."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        loadQuestion();
+    </script>
+
+</body>
+</html>
