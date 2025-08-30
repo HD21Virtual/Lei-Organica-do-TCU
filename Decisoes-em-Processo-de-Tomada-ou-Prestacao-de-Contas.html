@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decisões em Processo de Tomada ou Prestação de Contas</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Decisões em Processo de Tomada ou Prestação de Contas</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 120</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Caderno</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A decisão pela qual o Tribunal ordena o trancamento de contas consideradas iliquidáveis é classificada como definitiva.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 10, § 3°, a decisão que ordena o trancamento das contas por serem iliquidáveis é de natureza terminativa."
+            },
+            {
+                question: "A decisão preliminar é aquela pela qual o Tribunal se pronuncia sobre o mérito das contas, julgando-as regulares ou irregulares.",
+                answer: "Errado",
+                rationale: "O Art. 10, § 1°, define a decisão preliminar como aquela que ocorre antes de se pronunciar sobre o mérito, para ordenar diligências, citação, audiência ou sobrestar o julgamento. A decisão de mérito é a definitiva (§ 2°)."
+            },
+            {
+                question: "A determinação de citação ou audiência dos responsáveis, para saneamento do processo, caracteriza uma decisão preliminar.",
+                answer: "Certo",
+                rationale: "A afirmação está correta e corresponde exatamente a uma das hipóteses de decisão preliminar descritas no Art. 10, § 1°."
+            },
+            {
+                question: "O Relator do processo pode, por despacho singular e de ofício, determinar o sobrestamento do julgamento para a realização de diligências.",
+                answer: "Certo",
+                rationale: "O Art. 11 estabelece que o Relator presidirá a instrução e poderá determinar, mediante despacho singular e de ofício, o sobrestamento do julgamento e outras providências."
+            },
+            {
+                question: "A atuação do Relator na fase de instrução depende, obrigatoriamente, de provocação do órgão de instrução ou do Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "O Art. 11 é claro ao afirmar que o Relator pode atuar 'de ofício ou por provocação', não sendo a provocação obrigatória."
+            },
+            {
+                question: "Se for verificada uma irregularidade nas contas que não resulte em débito, o Tribunal ordenará a citação do responsável para apresentar razões de justificativa.",
+                answer: "Errado",
+                rationale: "O Art. 12 estabelece procedimentos distintos. Se não houver débito (inciso III), será determinada a audiência. A citação (inciso II) é para os casos em que houver débito."
+            },
+            {
+                question: "O Relator ou o Tribunal, ao verificar uma irregularidade, deverá definir a responsabilidade individual ou solidária pelo ato questionado.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao disposto no Art. 12, inciso I."
+            },
+            {
+                question: "O responsável que não atender à citação será considerado revel, o que acarreta o arquivamento do processo.",
+                answer: "Errado",
+                rationale: "De acordo com o Art. 12, § 3°, a revelia não arquiva o processo, mas implica o seu prosseguimento, considerando-se o responsável revel para todos os efeitos."
+            },
+            {
+                question: "Caso a defesa do responsável seja rejeitada pelo Tribunal, ele será notificado para recolher a importância devida em um novo prazo, o qual poderá ser prorrogado a critério do Relator.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 1°, estabelece que o novo prazo para recolhimento do débito é improrrogável."
+            },
+            {
+                question: "O processo será sanado se o responsável, agindo de boa-fé, liquidar tempestivamente o débito, mesmo que haja outras irregularidades nas contas.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 2°, estabelece duas condições para que o processo seja sanado: a liquidação tempestiva do débito com boa-fé e que não haja outra irregularidade nas contas."
+            },
+            {
+                question: "A publicação da decisão preliminar no Diário Oficial da União é um ato obrigatório.",
+                answer: "Errado",
+                rationale: "O Art. 13 estabelece que a publicação da decisão preliminar poderá, a critério do Relator, ser efetuada, tratando-se de um ato discricionário, e não obrigatório."
+            },
+            {
+                question: "O Tribunal de Contas da União deve julgar as tomadas ou prestações de contas no mesmo exercício em que estas lhe forem apresentadas.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 14, o prazo para julgamento se estende 'até o término do exercício seguinte àquele em que estas lhes tiverem sido apresentadas'."
+            },
+            {
+                question: "Ao julgar as contas, o Tribunal decidirá se elas são regulares, regulares com ressalva, ou irregulares.",
+                answer: "Certo",
+                rationale: "A afirmação reproduz fielmente o disposto no Art. 15, que define os três possíveis resultados do julgamento de mérito das contas."
+            },
+            {
+                question: "Contas que evidenciam uma impropriedade de natureza formal, mas da qual não resulte dano ao Erário, serão julgadas regulares com ressalva.",
+                answer: "Certo",
+                rationale: "Esta é a definição exata de contas regulares com ressalva, conforme o Art. 16, inciso II."
+            },
+            {
+                question: "A existência de dano ao Erário decorrente de ato de gestão ilegítimo é motivo para que as contas sejam julgadas regulares com ressalva.",
+                answer: "Errado",
+                rationale: "O Art. 16, inciso III, alínea 'c', classifica o dano ao Erário decorrente de ato de gestão ilegítimo como uma ocorrência que leva ao julgamento pela irregularidade das contas."
+            },
+            {
+                question: "A omissão no dever de prestar contas é uma das causas para o julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'a', lista expressamente a 'omissão no dever de prestar contas' como motivo para o julgamento de irregularidade."
+            },
+            {
+                question: "O Tribunal é obrigado a julgar irregulares as contas no caso de reincidência do responsável no descumprimento de uma determinação anterior.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 1°, afirma que o Tribunal poderá julgar irregulares as contas em caso de reincidência, indicando uma faculdade (ato discricionário), e não uma obrigação."
+            },
+            {
+                question: "Em caso de dano ao Erário, o Tribunal fixará a responsabilidade solidária do agente público que praticou o ato e do terceiro que tenha concorrido para o dano.",
+                answer: "Certo",
+                rationale: "A afirmação está correta e corresponde ao disposto no Art. 16, § 2°, que prevê a responsabilização solidária do agente público e do terceiro partícipe."
+            },
+            {
+                question: "A responsabilidade do terceiro que concorre para o dano, conforme o § 2º do art. 16, é subsidiária em relação à do agente público.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 2°, estabelece a responsabilidade solidária, o que significa que o Tribunal pode exigir a reparação integral do dano de qualquer um dos responsáveis, sem ordem de preferência."
+            },
+            {
+                question: "Após constatar a ocorrência de dano com a participação de terceiro, o Tribunal deve remeter cópia da documentação ao Ministério Público Estadual para as ações cabíveis.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 3°, determina a remessa da documentação pertinente ao Ministério Público da União, e não ao Estadual."
+            },
+            {
+                question: "A decisão que julga as contas regulares com ressalva, regulares ou irregulares é classificada como terminativa.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 10, § 2º, a decisão que julga as contas com um desses três resultados é a definitiva."
+            },
+            {
+                question: "Após a instrução do processo, o Relator o submeterá ao Plenário ou à Câmara respectiva para decisão de mérito.",
+                answer: "Certo",
+                rationale: "A parte final do Art. 11 descreve exatamente este procedimento."
+            },
+            {
+                question: "A liquidação tempestiva de um débito, mesmo que não haja reconhecimento da boa-fé do responsável, é suficiente para sanar o processo.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 2°, exige cumulativamente o reconhecimento da boa-fé e a liquidação tempestiva do débito para que o processo seja sanado."
+            },
+            {
+                question: "Contas serão julgadas regulares quando expressarem a exatidão dos demonstrativos contábeis e a legalidade, legitimidade e economicidade dos atos de gestão.",
+                answer: "Certo",
+                rationale: "Esta é a definição literal de contas regulares, conforme previsto no Art. 16, inciso I."
+            },
+            {
+                question: "A prática de um ato de gestão que infrinja norma legal de natureza orçamentária é causa para o julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'b', prevê como causa de irregularidade a 'infração à norma legal ou regulamentar de natureza contábil, financeira, orçamentária, operacional ou patrimonial'."
+            },
+            {
+                question: "A citação do responsável é a medida cabível quando se verifica irregularidade com débito, para que ele apresente defesa ou recolha a quantia devida.",
+                answer: "Certo",
+                rationale: "A afirmação descreve corretamente a finalidade da citação, conforme o Art. 12, inciso II."
+            },
+            {
+                question: "A audiência do responsável é a medida adequada para que ele apresente defesa ou recolha a quantia devida em casos de irregularidade sem débito.",
+                answer: "Errado",
+                rationale: "A audiência, conforme o Art. 12, inciso III, serve para que o responsável apresente razões de justificativa, e não para recolher quantia, visto que ocorre em situações sem débito."
+            },
+            {
+                question: "O desfalque de valores públicos é uma ocorrência que leva ao julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'd', lista o 'desfalque ou desvio de dinheiros, bens ou valores públicos' como motivo para a irregularidade."
+            },
+            {
+                question: "A remessa de documentação ao Ministério Público da União para ajuizamento de ações civis e penais é uma providência a ser tomada em todos os casos de contas julgadas irregulares.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 3°, especifica que essa providência será tomada 'verificada a ocorrência prevista no parágrafo anterior', ou seja, apenas nos casos de dano ou desfalque com fixação de responsabilidade solidária (alíneas 'c' e 'd' do inciso III)."
+            },
+            {
+                question: "A decisão do Relator de publicar ou não a decisão preliminar no Diário Oficial da União é um ato vinculado.",
+                answer: "Errado",
+                rationale: "O Art. 13 utiliza a expressão 'a critério do Relator', o que caracteriza o ato como discricionário, e não vinculado."
+            },
+            {
+                question: "O Relator pode ordenar a citação dos responsáveis por meio de uma decisão definitiva.",
+                answer: "Errado",
+                rationale: "A ordenação de citação ou audiência para saneamento do processo é um ato que caracteriza a decisão preliminar, conforme o Art. 10, § 1°. A decisão definitiva julga o mérito das contas."
+            },
+            {
+                question: "A decisão que julga as contas regulares é classificada como definitiva.",
+                answer: "Certo",
+                rationale: "O Art. 10, § 2°, define expressamente a decisão definitiva como aquela pela qual o Tribunal julga as contas regulares, regulares com ressalva, ou irregulares."
+            },
+            {
+                question: "O saneamento dos autos, por meio da determinação de diligências, é presidido pelo Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 11, é o Relator quem 'presidirá a instrução do processo', determinando as providências necessárias ao saneamento dos autos."
+            },
+            {
+                question: "Se houver débito apurado, o Tribunal determinará a audiência do responsável para que este recolha a quantia devida.",
+                answer: "Errado",
+                rationale: "O Art. 12, inciso II, estabelece que, se houver débito, o ato cabível é a citação do responsável. A audiência (inciso III) é para casos sem débito."
+            },
+            {
+                question: "O responsável que não atender à audiência será considerado revel, o que implica a suspensão do processo até sua manifestação.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 3°, determina que a revelia não suspende o processo, mas acarreta o seu prosseguimento."
+            },
+            {
+                question: "A liquidação tempestiva do débito, por si só, sanará o processo, independentemente da boa-fé do responsável.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 2°, exige cumulativamente o reconhecimento da boa-fé do responsável e a liquidação tempestiva para que o processo seja sanado."
+            },
+            {
+                question: "O prazo concedido ao responsável para recolher a importância devida, após sua defesa ter sido rejeitada, é prorrogável por uma única vez.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 1°, é taxativo ao afirmar que o novo prazo para o recolhimento é improrrogável."
+            },
+            {
+                question: "A publicação da decisão preliminar do Relator no Diário Oficial da União é um ato discricionário.",
+                answer: "Certo",
+                rationale: "O Art. 13 utiliza a expressão 'a critério do Relator', o que confere natureza discricionária ao ato de publicação, não sendo ele obrigatório."
+            },
+            {
+                question: "As prestações de contas apresentadas em um determinado exercício devem, obrigatoriamente, ser julgadas pelo TCU até o final do mesmo exercício.",
+                answer: "Errado",
+                rationale: "O prazo legal, conforme o Art. 14, é mais elástico, estendendo-se 'até o término do exercício seguinte àquele em que estas lhes tiverem sido apresentadas'."
+            },
+            {
+                question: "Contas podem ser julgadas regulares mesmo que os atos de gestão do responsável não demonstrem economicidade.",
+                answer: "Errado",
+                rationale: "O Art. 16, inciso I, exige, para o julgamento pela regularidade, a comprovação da 'legalidade, a legitimidade e a economicidade dos atos de gestão'."
+            },
+            {
+                question: "Uma falta de natureza formal da qual não resulte dano ao Erário levará ao julgamento pela irregularidade das contas.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 16, inciso II, tal ocorrência (impropriedade ou falta formal sem dano) enseja o julgamento das contas como regulares com ressalva."
+            },
+            {
+                question: "A prática de ato de gestão que infrinja norma regulamentar de natureza patrimonial é uma das ocorrências que levam ao julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'b', prevê expressamente essa hipótese como causa para a irregularidade das contas."
+            },
+            {
+                question: "O Tribunal de Contas da União deve, obrigatoriamente, remeter cópia da documentação ao Ministério Público da União sempre que julgar as contas irregulares.",
+                answer: "Errado",
+                rationale: "A remessa ao MPU, prevista no Art. 16, § 3°, é determinada para as hipóteses específicas do parágrafo anterior, ou seja, quando há dano ao Erário ou desfalque/desvio (alíneas 'c' e 'd' do inciso III), não para todos os casos de irregularidade."
+            },
+            {
+                question: "O terceiro que, como contratante, tenha concorrido para o dano apurado, responderá solidariamente com o agente público que praticou o ato irregular.",
+                answer: "Certo",
+                rationale: "Esta é a regra da responsabilidade solidária estabelecida no Art. 16, § 2°, alínea 'b'."
+            },
+            {
+                question: "A reincidência no descumprimento de determinação do TCU em processo de contas acarreta, obrigatoriamente, o julgamento pela irregularidade.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 1°, usa o verbo 'poderá', indicando que o julgamento pela irregularidade nesse caso é uma faculdade do Tribunal, e não uma obrigação."
+            },
+            {
+                question: "A decisão que sobresta o julgamento das contas para a realização de outras diligências é classificada como definitiva.",
+                answer: "Errado",
+                rationale: "De acordo com o Art. 10, § 1°, o sobrestamento do julgamento para a realização de diligências é um ato que caracteriza a decisão preliminar."
+            },
+            {
+                question: "O responsável será cientificado para recolher a importância devida em novo prazo apenas se sua defesa for rejeitada pelo Plenário, e não por decisão de Câmara.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 1°, refere-se à rejeição da defesa 'pelo Tribunal', termo que abrange tanto o Plenário quanto as Câmaras, não fazendo tal distinção."
+            },
+            {
+                question: "O desvio de bens públicos é uma das ocorrências que ensejam o julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'd', menciona expressamente o 'desfalque ou desvio de dinheiros, bens ou valores públicos'."
+            },
+            {
+                question: "Apenas o Plenário do Tribunal pode julgar as contas, sendo vedada essa atribuição às Câmaras.",
+                answer: "Errado",
+                rationale: "O Art. 11 indica que, após a instrução, o Relator submeterá o feito 'ao Plenário ou à Câmara respectiva para decisão de mérito', demonstrando a competência de ambos."
+            },
+            {
+                question: "Em caso de irregularidade, se não houver débito, o responsável será chamado para apresentar razões de justificativa por meio de audiência.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao procedimento descrito no Art. 12, inciso III."
+            },
+            {
+                question: "A decisão que julga as contas regulares com ressalva é classificada como preliminar.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 10, § 2°, a decisão que julga as contas regulares com ressalva é definitiva."
+            },
+            {
+                question: "O responsável que não atender à citação ou à audiência terá o processo arquivado por falta de interesse de agir.",
+                answer: "Errado",
+                rationale: "O não atendimento gera a revelia, e o processo tem seu prosseguimento normal, conforme o Art. 12, § 3°."
+            },
+            {
+                question: "A exatidão dos demonstrativos contábeis é um dos critérios para que as contas sejam julgadas regulares.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso I, exige que as contas regulares expressem, 'de forma clara e objetiva, a exatidão dos demonstrativos contábeis'."
+            },
+            {
+                question: "O dano ao Erário decorrente de ato de gestão antieconômico é causa para o julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'c', prevê textualmente essa hipótese."
+            },
+            {
+                question: "A remessa de cópias ao Ministério Público da União tem como finalidade o ajuizamento de ações civis, excluindo-se as ações penais.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 3°, determina a remessa para ajuizamento 'das ações civis e penais cabíveis'."
+            },
+            {
+                question: "A decisão terminativa é aquela pela qual o Tribunal resolve sobrestar o julgamento para saneamento do processo.",
+                answer: "Errado",
+                rationale: "Esta descrição corresponde à decisão preliminar (Art. 10, § 1°). A decisão terminativa ordena o trancamento de contas iliquidáveis (Art. 10, § 3°)."
+            },
+            {
+                question: "A definição da responsabilidade individual ou solidária pelo ato de gestão inquinado é uma das medidas a serem adotadas pelo Tribunal ao verificar uma irregularidade.",
+                answer: "Certo",
+                rationale: "A afirmação está em conformidade com o Art. 12, inciso I."
+            },
+            {
+                question: "O prazo para o responsável apresentar defesa ou razões de justificativa é estabelecido em lei ordinária federal.",
+                answer: "Errado",
+                rationale: "Os artigos 12, incisos II e III, e 11, remetem ao Regimento Interno do Tribunal para a fixação de tais prazos."
+            },
+            {
+                question: "Uma vez reconhecida a boa-fé e liquidado o débito, o processo será sanado, não podendo o TCU aplicar qualquer outra sanção.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 2°, condiciona o saneamento do processo à inexistência de 'outra irregularidade nas contas', o que significa que, se houver outra falha, o processo prosseguirá e sanções poderão ser aplicadas."
+            },
+            {
+                question: "A responsabilidade solidária do terceiro contratante ocorre apenas se ele tiver agido com dolo.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 2°, alínea 'b', não exige a comprovação de dolo, mas sim que o terceiro, de qualquer modo, 'haja concorrido para o cometimento do dano apurado', sendo uma análise objetiva da concorrência para o resultado."
+            },
+            {
+                question: "O Tribunal de Contas da União pode proferir quatro tipos de decisão em processos de contas: preliminar, definitiva, terminativa e interlocutória.",
+                answer: "Errado",
+                rationale: "O Art. 10, caput, é taxativo ao prever apenas três tipos de decisão em processo de tomada ou prestação de contas: preliminar, definitiva ou terminativa."
+            },
+            {
+                question: "A decisão que ordena o trancamento de contas iliquidáveis, por ser terminativa, impede que o processo seja reaberto futuramente.",
+                answer: "Errado",
+                rationale: "O Art. 10, § 3°, remete aos arts. 20 e 21 da Lei. O art. 21 estabelece que o Tribunal pode, posteriormente, ordenar o desarquivamento e a reabertura do processo se surgirem novos documentos que comprovem a responsabilidade. Portanto, a decisão não é imutável."
+            },
+            {
+                question: "O Relator pode ser provocado a agir na instrução do processo tanto por um órgão de instrução do próprio Tribunal quanto pelo Ministério Público que atua junto a ele.",
+                answer: "Certo",
+                rationale: "A afirmação está correta, pois o Art. 11 menciona que a atuação do Relator pode ser 'por provocação do órgão de instrução ou do Ministério Público junto ao Tribunal'."
+            },
+            {
+                question: "Compete ao Relator, em despacho singular, julgar o mérito das contas, submetendo sua decisão apenas para homologação do colegiado.",
+                answer: "Errado",
+                rationale: "O Art. 11 estabelece que o Relator preside a instrução e, ao final, 'submeterá o feito ao Plenário ou à Câmara respectiva para decisão de mérito'. Ele não decide o mérito sozinho."
+            },
+            {
+                question: "A citação do responsável só pode ser ordenada pelo colegiado (Plenário ou Câmara), e não pelo Relator de forma isolada.",
+                answer: "Errado",
+                rationale: "O Art. 11 confere ao Relator o poder de determinar, 'mediante despacho singular', a citação ou a audiência dos responsáveis."
+            },
+            {
+                question: "A rejeição da defesa do responsável pelo Tribunal acarreta a imediata inscrição do débito em dívida ativa.",
+                answer: "Errado",
+                rationale: "O procedimento é diferente. Conforme o Art. 12, § 1°, após a rejeição da defesa, o responsável será cientificado para, 'em novo e improrrogável prazo', recolher a importância devida. A inscrição em dívida ativa é uma etapa posterior, caso este novo prazo não seja cumprido."
+            },
+            {
+                question: "A revelia do responsável, declarada pelo Tribunal, impede que ele venha a interpor recursos contra a decisão que vier a ser proferida.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 3°, diz que o revel assim será considerado 'para todos os efeitos', dando-se prosseguimento ao processo. A jurisprudência do TCU e a lei, no entanto, garantem ao revel o direito de intervir no processo no estado em que se encontra, inclusive para recorrer da decisão de mérito. O artigo não veda o recurso."
+            },
+            {
+                question: "Reconhecida a boa-fé e liquidado o débito, o processo será sanado, o que impede a aplicação de multa ao responsável.",
+                answer: "Certo",
+                rationale: "O saneamento do processo, previsto no Art. 12, § 2°, significa que a irregularidade principal (o débito) foi resolvida. Se não houver outra irregularidade, não há fundamento para aplicação de multa, pois o processo é encerrado sem julgamento de mérito pela irregularidade."
+            },
+            {
+                question: "A publicação da decisão preliminar no Diário Oficial da União, quando ocorre, é uma decisão do Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "O Art. 13 é claro ao afirmar que a publicação ocorre 'a critério do Relator'."
+            },
+            {
+                question: "Se uma prestação de contas for apresentada ao TCU em janeiro de 2024, o Tribunal terá até 31 de dezembro de 2025 para julgá-la.",
+                answer: "Certo",
+                rationale: "A afirmação está correta. Conforme o Art. 14, o Tribunal deve julgar as contas até o término do exercício seguinte (2025) àquele em que foram apresentadas (2024)."
+            },
+            {
+                question: "A infração a uma norma regulamentar de natureza operacional é motivo para o julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'b', inclui como causa de irregularidade a 'infração à norma legal ou regulamentar de natureza (...) operacional'."
+            },
+            {
+                question: "O julgamento pela regularidade das contas exige a comprovação da exatidão dos demonstrativos contábeis, mas não a da legitimidade dos atos de gestão.",
+                answer: "Errado",
+                rationale: "O Art. 16, inciso I, exige cumulativamente a comprovação da 'exatidão dos demonstrativos contábeis, a legalidade, a legitimidade e a economicidade dos atos de gestão'."
+            },
+            {
+                question: "Se um ato de gestão for legal e legítimo, porém antieconômico e causador de dano ao Erário, as contas ainda assim poderão ser julgadas regulares.",
+                answer: "Errado",
+                rationale: "O Art. 16, inciso III, alínea 'c', define o 'dano ao Erário decorrente de ato de gestão ilegítimo ao antieconômico' como causa para o julgamento pela irregularidade."
+            },
+            {
+                question: "A responsabilidade solidária do terceiro contratante somente se aplica nos casos de desfalque, não se estendendo aos casos de dano por ato de gestão antieconômico.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 2°, estabelece a responsabilidade solidária para as hipóteses das alíneas 'c' (dano ao Erário) e 'd' (desfalque ou desvio) do inciso III, abrangendo ambos os casos."
+            },
+            {
+                question: "A comunicação ao Ministério Público da União é uma providência que o Tribunal deve tomar antes mesmo de julgar as contas, assim que verificar a ocorrência do dano.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 3°, condiciona a providência à verificação da ocorrência do parágrafo anterior, que, por sua vez, ocorre no momento em que o Tribunal, 'ao julgar irregulares as contas', fixa a responsabilidade. Portanto, a comunicação é posterior ao julgamento."
+            },
+            {
+                question: "A decisão que julga as contas regulares com ressalva possui natureza definitiva.",
+                answer: "Certo",
+                rationale: "O Art. 10, § 2°, define a decisão definitiva como aquela pela qual o Tribunal julga as contas 'regulares, regulares com ressalva, ou irregulares'."
+            },
+            {
+                question: "O saneamento do processo pela liquidação do débito com boa-fé, previsto no Art. 12, § 2º, aplica-se mesmo que a irregularidade seja desfalque de dinheiro público.",
+                answer: "Errado",
+                rationale: "O desfalque é um ato doloso que afasta, por natureza, o reconhecimento da boa-fé, que é um requisito indispensável para o saneamento do processo nos termos do Art. 12, § 2º."
+            },
+            {
+                question: "O prazo para atendimento de diligências determinadas pelo Relator é fixado na própria lei.",
+                answer: "Errado",
+                rationale: "O Art. 11 estabelece que o Relator fixará o prazo 'na forma estabelecida no Regimento Interno'."
+            },
+            {
+                question: "O terceiro interessado na prática do ato danoso responderá solidariamente, mesmo que não seja o contratante direto da administração pública.",
+                answer: "Certo",
+                rationale: "O Art. 16, § 2°, alínea 'b', abrange o terceiro que, 'como contratante ou parte interessada na prática do mesmo ato', tenha concorrido para o dano."
+            },
+            {
+                question: "As contas podem ser julgadas irregulares unicamente com base na reincidência de descumprimento de determinação anterior do TCU.",
+                answer: "Certo",
+                rationale: "Sim. O Art. 16, § 1°, apresenta a reincidência como um fundamento autônomo para, a critério do Tribunal, julgar as contas irregulares."
+            },
+            {
+                question: "A decisão que resolve sobrestar o julgamento de um processo de contas é classificada como terminativa.",
+                answer: "Errado",
+                rationale: "O sobrestamento do julgamento é uma das hipóteses de decisão preliminar, conforme o Art. 10, § 1°."
+            },
+            {
+                question: "Em um processo sem débito, onde o responsável foi chamado em audiência e não apresentou justificativa, o Tribunal o considerará revel e julgará imediatamente as contas irregulares.",
+                answer: "Errado",
+                rationale: "A revelia não implica julgamento automático pela irregularidade. Conforme o Art. 12, § 3°, a revelia faz com que se dê prosseguimento ao processo, que continuará sua tramitação normal para análise do mérito com base nos elementos já existentes nos autos."
+            },
+            {
+                question: "A economicidade de um ato de gestão é critério avaliado pelo TCU apenas na fiscalização, não sendo considerada no julgamento de contas.",
+                answer: "Errado",
+                rationale: "O Art. 16, inciso I, é explícito ao incluir a economicidade dos atos de gestão como um dos critérios para o julgamento pela regularidade das contas."
+            },
+            {
+                question: "A responsabilidade solidária prevista no Art. 16, § 2º, alcança o agente público, mas não o terceiro que, mesmo tendo concorrido para o dano, não tenha recebido recursos públicos.",
+                answer: "Errado",
+                rationale: "A lei não impõe como condição para a responsabilização do terceiro o recebimento de recursos públicos. Basta que ele, 'de qualquer modo haja concorrido para o cometimento do dano apurado'."
+            },
+            {
+                question: "A decisão definitiva em processo de contas não pode ser objeto de revisão, sendo final na esfera administrativa.",
+                answer: "Errado",
+                rationale: "Embora os artigos fornecidos não tratem do tema, a própria Lei Orgânica do TCU prevê recursos contra as decisões definitivas, como o Recurso de Reconsideração e o Recurso de Revisão, não sendo a decisão imutável na esfera administrativa. A literalidade do texto não veda recursos."
+            },
+            {
+                question: "O Tribunal pode adotar 'outras medidas cabíveis' além da citação e da audiência ao verificar irregularidade nas contas.",
+                answer: "Certo",
+                rationale: "O Art. 12, inciso IV, prevê expressamente a adoção de 'outras medidas cabíveis', conferindo ao Tribunal um poder geral de cautela."
+            },
+            {
+                question: "A liquidação tempestiva mencionada no § 2º do art. 12 refere-se ao pagamento do débito antes da citação.",
+                answer: "Errado",
+                rationale: "A liquidação 'tempestiva', no contexto processual do TCU, refere-se ao pagamento dentro do prazo fixado pelo Tribunal após a citação, antes do julgamento de mérito das contas."
+            },
+            {
+                question: "Se as contas de um gestor forem julgadas regulares, ele está isento de qualquer responsabilidade futura pelos atos praticados naquele exercício.",
+                answer: "Errado",
+                rationale: "O julgamento pela regularidade dá quitação ao responsável, mas a decisão pode ser revista caso surjam novas provas (via Recurso de Revisão, por exemplo). Além disso, a quitação não o exime de responsabilidades em outras esferas, como a cível e a penal."
+            },
+            {
+                question: "O julgamento de contas é um processo que avalia um conjunto de atos de gestão praticados em um determinado período.",
+                answer: "Certo",
+                rationale: "Essa é a natureza do processo de prestação ou tomada de contas, conforme se depreende da leitura dos artigos, especialmente do Art. 16, inciso I, que se refere à análise dos 'atos de gestão do responsável'."
+            },
+            {
+                question: "O Relator fixa o prazo para o atendimento de diligências com base em sua discricionariedade, não havendo parâmetros em normas internas.",
+                answer: "Errado",
+                rationale: "O Art. 11 estabelece que o Relator fixará o prazo 'na forma estabelecida no Regimento Interno', indicando que sua atuação é vinculada aos parâmetros dessa norma."
+            },
+            {
+                question: "Dentre as decisões possíveis em um processo de contas, a única que analisa o mérito da gestão é a decisão definitiva.",
+                answer: "Certo",
+                rationale: "Correto. A decisão preliminar (Art. 10, § 1°) antecede a análise de mérito, e a terminativa (Art. 10, § 3°) tranca as contas sem julgá-las por serem iliquidáveis. Apenas a definitiva (§ 2°) julga as contas como regulares, regulares com ressalva ou irregulares, analisando o mérito."
+            },
+            {
+                question: "A ordenação de uma diligência necessária ao saneamento do processo é um ato que pode ser praticado tanto pelo Relator, em decisão preliminar, quanto pelo Tribunal.",
+                answer: "Certo",
+                rationale: "O Art. 10, § 1°, estabelece que a decisão preliminar pode ser do 'Relator ou o Tribunal', e ela pode 'determinar outras diligências necessárias ao saneamento do processo'."
+            },
+            {
+                question: "O Relator tem a prerrogativa de fixar prazo para o cumprimento de diligências, mas a determinação do sobrestamento do julgamento é de competência exclusiva do colegiado (Plenário ou Câmara).",
+                answer: "Errado",
+                rationale: "O Art. 11 confere ao Relator, mediante despacho singular, o poder de determinar o 'sobrestamento do julgamento', não sendo uma competência exclusiva do colegiado."
+            },
+            {
+                question: "Se o responsável, citado para recolher um débito, apresentar defesa, o Relator deverá submeter a análise da defesa ao colegiado antes de prosseguir com o feito.",
+                answer: "Certo",
+                rationale: "Embora não explícito, é a decorrência lógica do sistema. O Art. 11 diz que o Relator preside a instrução e submete o feito para 'decisão de mérito'. O Art. 12, § 1º, fala da 'defesa for rejeitada pelo Tribunal', indicando que a análise é do colegiado, não do Relator monocraticamente."
+            },
+            {
+                question: "O responsável será considerado revel caso não atenda à citação, mas não se não atender à audiência.",
+                answer: "Errado",
+                rationale: "O Art. 12, § 3°, é explícito ao aplicar a revelia ao responsável que não atender 'à citação ou à audiência'."
+            },
+            {
+                question: "Se o responsável recolher o débito dentro do prazo, o processo será automaticamente sanado, e as contas julgadas regulares.",
+                answer: "Errado",
+                rationale: "A afirmação é incorreta por duas razões. Primeiro, o Art. 12, § 2º, exige o reconhecimento da boa-fé e a ausência de outras irregularidades. Segundo, o saneamento do processo leva ao seu arquivamento, e não a um julgamento de mérito pela regularidade."
+            },
+            {
+                question: "A atualização monetária do débito é um requisito para que a sua liquidação tempestiva possa sanar o processo.",
+                answer: "Certo",
+                rationale: "O Art. 12, § 2°, menciona expressamente a 'liquidação tempestiva do débito atualizado monetariamente'."
+            },
+            {
+                question: "O prazo para recolhimento da importância devida, após a rejeição da defesa, é improrrogável, o que veda a possibilidade de parcelamento do débito.",
+                answer: "Errado",
+                rationale: "A improrrogabilidade do prazo (Art. 12, § 1°) significa que o termo final não pode ser estendido. Contudo, isso não impede que o Tribunal, por norma própria, autorize o parcelamento do débito a ser quitado dentro daquele prazo, conforme previsto no Regimento Interno do TCU. O artigo não veda o parcelamento."
+            },
+            {
+                question: "A decisão de publicar ou não um ato processual é sempre discricionária do Relator.",
+                answer: "Errado",
+                rationale: "A afirmação generaliza indevidamente. O Art. 13 confere discricionariedade ao Relator para a publicação da decisão preliminar. No entanto, a publicação da decisão definitiva (acórdão), por exemplo, é um ato obrigatório para fins de eficácia e publicidade."
+            },
+            {
+                question: "O prazo para julgamento de contas estabelecido no Art. 14 é um prazo próprio, cujo descumprimento não acarreta a nulidade do julgamento.",
+                answer: "Certo",
+                rationale: "A legislação e a jurisprudência entendem que este prazo é próprio (dirigido à administração para ordenar seus trabalhos), e não impróprio (cujo descumprimento gera a perda do direito de praticar o ato). Portanto, um julgamento realizado após esse prazo não é considerado nulo."
+            },
+            {
+                question: "A clareza e a objetividade na expressão dos demonstrativos contábeis são critérios para o julgamento das contas regulares.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso I, exige que as contas regulares expressem, 'de forma clara e objetiva', a exatidão dos demonstrativos."
+            },
+            {
+                question: "A omissão no dever de prestar contas e o desfalque de dinheiro público são hipóteses de irregularidade que, obrigatoriamente, levam à fixação da responsabilidade solidária de terceiros.",
+                answer: "Errado",
+                rationale: "A regra da responsabilidade solidária do § 2º do Art. 16 aplica-se às alíneas 'c' (dano ao Erário) e 'd' (desfalque/desvio), mas não à alínea 'a' (omissão no dever de prestar contas)."
+            },
+            {
+                question: "A prática de um ato de gestão que seja legal e legítimo, mas antieconômico, é passível de levar ao julgamento pela irregularidade das contas.",
+                answer: "Certo",
+                rationale: "Sim. O Art. 16, inciso III, alínea 'b', cita a 'prática de ato de gestão (...) antieconômico' como causa de irregularidade, independentemente de ser legal ou não. A alínea 'c' reforça isso ao mencionar dano decorrente de ato antieconômico."
+            },
+            {
+                question: "Para que as contas sejam julgadas regulares com ressalva, é imprescindível que a falta cometida seja de natureza formal e que dela não resulte prejuízo financeiro ao Erário.",
+                answer: "Certo",
+                rationale: "A afirmação resume perfeitamente as duas condições cumulativas exigidas pelo Art. 16, inciso II."
+            },
+            {
+                question: "A responsabilidade solidária do terceiro contratante, prevista no Art. 16, § 2º, só pode ser fixada no mesmo processo de contas do agente público, sendo vedada a instauração de processo apartado para esse fim.",
+                answer: "Certo",
+                rationale: "A redação do § 2º ('o Tribunal, ao julgar irregulares as contas, fixará a responsabilidade solidária') indica que a apuração e a fixação da responsabilidade de ambos ocorrem conjuntamente no mesmo processo de contas em que se julga o ato irregular."
+            },
+            {
+                question: "A decisão pela qual o Tribunal resolve o mérito das contas é chamada de terminativa.",
+                answer: "Errado",
+                rationale: "A decisão que resolve o mérito é a definitiva (Art. 10, § 2º). A terminativa (Art. 10, § 3º) não adentra o mérito, apenas tranca o processo."
+            },
+            {
+                question: "As Câmaras do Tribunal têm a mesma competência do Plenário para julgar o mérito de um processo de contas.",
+                answer: "Certo",
+                rationale: "O Art. 11 estabelece que o Relator submeterá o processo 'ao Plenário ou à Câmara respectiva para decisão de mérito', equiparando a competência de ambos para esse ato."
+            },
+            {
+                question: "A rejeição da defesa do responsável por um débito é um ato que precede a fixação de um novo prazo para pagamento.",
+                answer: "Certo",
+                rationale: "O Art. 12, § 1º, estabelece exatamente essa sequência: primeiro, a defesa é rejeitada; depois, o responsável é cientificado para, em novo prazo, recolher o valor."
+            },
+            {
+                question: "A citação e a audiência são instrumentos de mesma finalidade, podendo ser utilizados um no lugar do outro a critério do Relator.",
+                answer: "Errado",
+                rationale: "Possuem finalidades distintas e inconfundíveis. A citação (Art. 12, II) é para defesa em caso de débito. A audiência (Art. 12, III) é para apresentação de justificativas quando não há débito."
+            },
+            {
+                question: "O julgamento pela irregularidade das contas pode ocorrer mesmo que não haja dano ao Erário.",
+                answer: "Certo",
+                rationale: "Sim. As hipóteses do Art. 16, inciso III, alíneas 'a' (omissão) e 'b' (ato ilegal, ilegítimo, etc.), não exigem a ocorrência de dano para a configuração da irregularidade."
+            },
+            {
+                question: "A comunicação ao Ministério Público da União para ajuizamento de ações cíveis e penais é uma consequência exclusiva do julgamento irregular de contas em que haja desfalque.",
+                answer: "Errado",
+                rationale: "O Art. 16, § 3º, remete ao § 2º, que trata das hipóteses das alíneas 'c' (dano ao Erário) e 'd' (desfalque ou desvio), não se restringindo apenas ao desfalque."
+            },
+            {
+                question: "O trancamento de contas iliquidáveis é considerado uma decisão de mérito, pois analisa a impossibilidade de quantificar o dano.",
+                answer: "Errado",
+                rationale: "É uma decisão processual, de natureza terminativa (Art. 10, § 3º). Justamente por não ser possível liquidar as contas (quantificar o dano ou identificar o devedor), o mérito não é julgado."
+            },
+            {
+                question: "A boa-fé do responsável é um elemento subjetivo a ser considerado pelo Tribunal para fins de saneamento do processo em caso de débito.",
+                answer: "Certo",
+                rationale: "Sim, o Art. 12, § 2º, exige que o Tribunal reconheça a boa-fé para que o pagamento do débito possa sanar o processo."
+            },
+            {
+                question: "Um gestor que cumpre todas as normas legais e regulamentares, mas cujos atos de gestão são comprovadamente antieconômicos, terá suas contas julgadas regulares com ressalva.",
+                answer: "Errado",
+                rationale: "O ato antieconômico é uma das causas para o julgamento pela irregularidade das contas, conforme Art. 16, inciso III, alíneas 'b' e 'c'."
+            },
+            {
+                question: "O responsável que tem suas contas julgadas irregulares por omissão no dever de prestar contas não pode ser condenado a pagar um débito, apenas a pagar multa.",
+                answer: "Certo",
+                rationale: "A irregularidade por omissão (Art. 16, III, 'a') não presume a existência de débito. O Tribunal julga as contas irregulares, aplica a multa cabível, mas para condenar em débito, seria necessária a instauração de Tomada de Contas Especial para apurá-lo. No julgamento pela mera omissão, a condenação é apenas em multa."
+            },
+            {
+                question: "O prazo para julgamento de contas previsto no Art. 14 é aplicável apenas às prestações de contas, não se aplicando às tomadas de contas.",
+                answer: "Errado",
+                rationale: "O Art. 14 menciona 'as tomadas ou prestações de contas', aplicando-se a ambos os tipos de processo."
+            },
+            {
+                question: "A definição da responsabilidade solidária é um ato que pode ser realizado monocraticamente pelo Relator.",
+                answer: "Errado",
+                rationale: "O Art. 12, inciso I, atribui a definição da responsabilidade ao 'Relator ou o Tribunal'. Contudo, a fixação final da responsabilidade solidária, especialmente a condenação, ocorre no julgamento de mérito pelo colegiado, conforme o Art. 16, § 2º ('o Tribunal (...) fixará')."
+            },
+            {
+                question: "O novo prazo para pagamento do débito, após rejeição da defesa, tem seu período fixado no Regimento Interno do TCU.",
+                answer: "Certo",
+                rationale: "O Art. 12, § 1º, estabelece que o responsável será cientificado para recolher a importância devida em 'novo e improrrogável prazo estabelecido no Regimento Interno'."
+            },
+            {
+                question: "A infração a norma legal de natureza financeira é causa suficiente para o julgamento pela irregularidade das contas, mesmo que não seja comprovado dano ao Erário.",
+                answer: "Certo",
+                rationale: "O Art. 16, inciso III, alínea 'b', tipifica como irregularidade a 'infração à norma legal (...) de natureza (...) financeira', não condicionando essa hipótese à ocorrência de dano."
+            },
+            {
+                question: "A decisão que julga as contas irregulares é, por sua natureza, uma decisão definitiva.",
+                answer: "Certo",
+                rationale: "Conforme o Art. 10, § 2°, a decisão definitiva é aquela pela qual o Tribunal julga as contas, entre outras hipóteses, irregulares."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
