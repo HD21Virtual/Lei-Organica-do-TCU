@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execução das Decisões</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Execução das Decisões</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 90</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A citação do responsável, quando este não for localizado, far-se-á por carta registrada com aviso de recebimento enviada ao seu último endereço conhecido.",
+                answer: "Errado",
+                rationale: "O Art. 22, inciso III, estabelece que, quando o destinatário não for localizado, a comunicação se fará por edital publicado no Diário Oficial da União."
+            },
+            {
+                question: "A comunicação de rejeição dos fundamentos da defesa de um responsável seguirá as mesmas formalidades previstas para a citação ou audiência.",
+                answer: "Certo",
+                rationale: "A afirmação está correta, pois o parágrafo único do Art. 22 determina que a comunicação de rejeição da defesa será transmitida na forma prevista no referido artigo."
+            },
+            {
+                question: "A decisão definitiva do Tribunal será formalizada por acórdão, cuja publicação no Diário Oficial da União é facultativa.",
+                answer: "Errado",
+                rationale: "O Art. 23, caput, estabelece que a publicação do acórdão no Diário Oficial da União constituirá os efeitos listados, indicando sua obrigatoriedade para a produção de tais efeitos."
+            },
+            {
+                question: "No caso de contas regulares com ressalva, a publicação do acórdão constitui certificado de quitação plena.",
+                answer: "Errado",
+                rationale: "O Art. 23, inciso II, especifica que, no caso de contas regulares com ressalva, o certificado é de quitação com determinação, e não quitação plena. A quitação plena (inciso I) é para contas regulares."
+            },
+            {
+                question: "A decisão que julga as contas irregulares, imputando débito ao responsável, torna-se título executivo imediatamente após a sua prolação, antes mesmo da publicação.",
+                answer: "Errado",
+                rationale: "O Art. 23, inciso III, alínea 'b', condiciona a característica de título executivo à não quitação da dívida no prazo concedido ao responsável após a notificação, que por sua vez depende da publicação do acórdão."
+            },
+            {
+                question: "A decisão do TCU que comina multa torna a dívida líquida e certa, além de possuir eficácia de título executivo.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao disposto no Art. 24, que se aplica tanto a decisões que resultem em débito quanto àquelas que cominem multa."
+            },
+            {
+                question: "Após o julgamento pela irregularidade das contas, o responsável será citado para, no prazo regimental, efetuar o recolhimento da dívida.",
+                answer: "Errado",
+                rationale: "O termo processual correto para o chamamento ao pagamento após a decisão definitiva é notificação, conforme o Art. 25. A citação ocorre na fase de instrução, para a apresentação de defesa."
+            },
+            {
+                question: "O prazo para o responsável comprovar o recolhimento da dívida é estabelecido na própria lei.",
+                answer: "Errado",
+                rationale: "O Art. 25 estabelece que o prazo será 'estabelecido no Regimento Interno'."
+            },
+            {
+                question: "O recolhimento parcelado da dívida é um direito do responsável, devendo o Tribunal autorizá-lo sempre que solicitado.",
+                answer: "Errado",
+                rationale: "O Art. 26 afirma que o Tribunal poderá autorizar o recolhimento parcelado, indicando tratar-se de uma faculdade (ato discricionário) do Tribunal, e não de um direito do responsável."
+            },
+            {
+                question: "O parcelamento do débito só pode ser autorizado pelo Tribunal antes da decisão definitiva.",
+                answer: "Errado",
+                rationale: "O Art. 26 é claro ao permitir a autorização do parcelamento 'em qualquer fase do processo'."
+            },
+            {
+                question: "A falta de recolhimento de qualquer parcela de um débito autorizado para pagamento parcelado acarreta o vencimento antecipado do saldo devedor.",
+                answer: "Certo",
+                rationale: "Esta é a consequência expressamente prevista no parágrafo único do Art. 26."
+            },
+            {
+                question: "Após a comprovação do recolhimento integral da dívida, o Tribunal expedirá a quitação do débito ou da multa.",
+                answer: "Certo",
+                rationale: "A afirmação reproduz fielmente o conteúdo do Art. 27."
+            },
+            {
+                question: "Expirado o prazo para pagamento, o Tribunal determinará, obrigatoriamente e de forma cumulativa, o desconto da dívida nos vencimentos do responsável e a sua cobrança judicial.",
+                answer: "Errado",
+                rationale: "O Art. 28 utiliza o verbo 'poderá', indicando que as medidas são facultativas. Além disso, a conjunção 'ou' entre os incisos I e II demonstra que as medidas são alternativas, e não cumulativas."
+            },
+            {
+                question: "O desconto da dívida nos vencimentos do responsável é uma das medidas que o TCU pode adotar em caso de não pagamento, observados os limites legais.",
+                answer: "Certo",
+                rationale: "Esta é a medida prevista no Art. 28, inciso I."
+            },
+            {
+                question: "A cobrança judicial da dívida, quando autorizada pelo TCU, é realizada diretamente pelos seus próprios servidores.",
+                answer: "Errado",
+                rationale: "O Art. 28, inciso II, estabelece que a cobrança judicial será feita 'por intermédio do Ministério Público junto ao Tribunal'."
+            },
+            {
+                question: "A decisão terminativa, por não julgar o mérito, está dispensada de publicação no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "O Art. 29 exige expressamente que 'a decisão terminativa (...) será publicada no Diário Oficial da União'."
+            },
+            {
+                question: "Os prazos para o responsável se manifestar nos autos contam-se, em regra, da data de expedição da comunicação pelo Tribunal.",
+                answer: "Errado",
+                rationale: "O Art. 30, inciso I, estabelece que os prazos se contam da data do recebimento da comunicação pelo responsável ou interessado."
+            },
+            {
+                question: "O prazo para um responsável não localizado apresentar sua defesa começa a fluir a partir da data de publicação do edital no Diário Oficial da União.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao disposto no Art. 30, inciso II."
+            },
+            {
+                question: "A comunicação por edital é a forma preferencial de notificação do responsável, sendo utilizada em todos os casos.",
+                answer: "Errado",
+                rationale: "O edital (Art. 22, III) é uma medida subsidiária, utilizada apenas 'quando o seu destinatário não for localizado'. As formas preferenciais são a ciência pessoal (inciso I) e a via postal (inciso II)."
+            },
+            {
+                question: "A publicação do acórdão de contas irregulares serve como fundamento para que a autoridade competente aplique sanções previstas em outras normas.",
+                answer: "Certo",
+                rationale: "O Art. 23, inciso III, alínea 'c', estabelece que a publicação do acórdão é 'fundamento para que a autoridade competente proceda à efetivação das sanções previstas nos arts. 60 e 61 desta Lei'."
+            },
+            {
+                question: "A notificação para pagamento da dívida pode ser feita pelo correio, mediante carta registrada com aviso de recebimento.",
+                answer: "Certo",
+                rationale: "Sim. O Art. 25, parágrafo único, determina que a notificação será feita na forma do Art. 22, cujo inciso II prevê a comunicação via correio."
+            },
+            {
+                question: "Se o responsável optar pelo pagamento parcelado, os acréscimos legais incidirão apenas sobre a última parcela.",
+                answer: "Errado",
+                rationale: "O Art. 26 afirma que os acréscimos legais incidirão 'sobre cada parcela'."
+            },
+            {
+                question: "A quitação da dívida pelo Tribunal só é expedida após a comprovação do recolhimento da primeira parcela do débito.",
+                answer: "Errado",
+                rationale: "O Art. 27 é claro ao exigir a comprovação do 'recolhimento integral' para a expedição da quitação."
+            },
+            {
+                question: "A decisão terminativa deve ser publicada com seus fundamentos.",
+                answer: "Certo",
+                rationale: "O Art. 29 exige que a publicação da decisão terminativa seja 'acompanhada de seus fundamentos'."
+            },
+            {
+                question: "O prazo para interposição de um recurso, salvo disposição em contrário, começa a contar do recebimento do acórdão pelo interessado.",
+                answer: "Errado",
+                rationale: "De acordo com o Art. 30, inciso III, nos 'demais casos' (o que inclui os prazos recursais contra decisões colegiadas), o prazo se inicia com a publicação da decisão ou do acórdão no Diário Oficial da União."
+            },
+            {
+                question: "A quitação plena conferida no caso de contas regulares é o mesmo que o certificado de quitação com determinação.",
+                answer: "Errado",
+                rationale: "São coisas distintas. A quitação plena (Art. 23, I) é para contas regulares, enquanto a quitação com determinação (Art. 23, II) é para contas regulares com ressalva."
+            },
+            {
+                question: "A eficácia de título executivo da decisão do TCU aplica-se tanto à cobrança de débito quanto à de multa.",
+                answer: "Certo",
+                rationale: "Sim, o Art. 24 é explícito ao afirmar que a decisão 'de que resulte imputação de débito ou cominação de multa' tem eficácia de título executivo."
+            },
+            {
+                question: "O desconto da dívida nos proventos de aposentadoria do responsável é uma medida vedada pela lei.",
+                answer: "Errado",
+                rationale: "O Art. 28, inciso I, autoriza expressamente o desconto da dívida nos 'vencimentos, salários ou proventos do responsável'."
+            },
+            {
+                question: "O prazo para o responsável atender a uma comunicação de diligência conta-se da data da publicação da comunicação no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "O Art. 30, inciso I, alínea 'c', estabelece que o prazo para atender a uma diligência se conta do recebimento da comunicação pelo interessado. A publicação só é usada se ele não for localizado (inciso II)."
+            },
+            {
+                question: "A obrigação de o responsável comprovar o recolhimento da dívida surge com a publicação do acórdão que julgou suas contas irregulares.",
+                answer: "Certo",
+                rationale: "O Art. 23, inciso III, alínea 'a', estabelece que a publicação do acórdão de contas irregulares constituirá a 'obrigação de o responsável (...) comprovar perante o Tribunal que recolheu (...) a quantia'."
+            },
+            {
+                question: "A comunicação de uma diligência a um interessado em processo no TCU pode ser realizada por meio de carta registrada com aviso de recebimento.",
+                answer: "Certo",
+                rationale: "O Art. 22, caput, lista a 'comunicação de diligência' como um dos atos a serem realizados na forma de seus incisos, e o inciso II prevê o envio por correio."
+            },
+            {
+                question: "Se o responsável não for localizado para receber a notificação de pagamento, o Tribunal determinará o desconto da dívida em seus vencimentos.",
+                answer: "Errado",
+                rationale: "O procedimento é outro. Se o destinatário não for localizado, a comunicação se dará por edital (Art. 22, III). Apenas após o prazo concedido no edital expirar é que o Tribunal poderá cogitar as medidas do Art. 28."
+            },
+            {
+                question: "O documento que formaliza a decisão definitiva do Tribunal é o acórdão.",
+                answer: "Certo",
+                rationale: "O Art. 23, caput, estabelece que 'a decisão definitiva será formalizada nos termos estabelecidos no Regimento Interno, por acórdão'."
+            },
+            {
+                question: "O certificado de quitação com determinação é o documento que comprova a regularidade das contas, mesmo com a existência de impropriedades formais.",
+                answer: "Certo",
+                rationale: "A afirmação está correta, pois o Art. 23, inciso II, associa o certificado de quitação com determinação ao caso de contas regulares com ressalva, que, por sua vez, são caracterizadas por impropriedades ou faltas formais (conforme Art. 18)."
+            },
+            {
+                question: "A publicação do acórdão de contas irregulares constitui, simultaneamente, a obrigação de pagar e o título executivo para cobrança judicial.",
+                answer: "Errado",
+                rationale: "Há uma condição temporal. A publicação constitui a obrigação de pagar (Art. 23, III, 'a'). O acórdão só se torna título executivo se a dívida não for recolhida no prazo pelo responsável (Art. 23, III, 'b')."
+            },
+            {
+                question: "A decisão do Tribunal que imputa débito, por si só, torna a dívida líquida e certa.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao disposto no Art. 24: 'A decisão do Tribunal, de que resulte imputação de débito (...), torna a dívida líquida e certa'."
+            },
+            {
+                question: "A notificação para pagamento, prevista no Art. 25, aplica-se aos casos de condenação em débito, mas não aos de cominação de multa.",
+                answer: "Errado",
+                rationale: "O Art. 25 remete ao Art. 19 e seu parágrafo único, que tratam tanto de débito (caput) quanto de multa (caput e parágrafo único), abrangendo ambas as situações."
+            },
+            {
+                question: "A autorização para o recolhimento parcelado da dívida pode ser concedida mesmo após o trânsito em julgado da decisão.",
+                answer: "Certo",
+                rationale: "O Art. 26 é bastante amplo, permitindo o parcelamento 'em qualquer fase do processo', o que inclui a fase de execução da decisão."
+            },
+            {
+                question: "No pagamento parcelado, os acréscimos legais são calculados apenas sobre o valor total da dívida, não incidindo sobre as parcelas individuais.",
+                answer: "Errado",
+                rationale: "O Art. 26 especifica que os acréscimos legais incidirão 'sobre cada parcela'."
+            },
+            {
+                question: "A quitação do débito pelo Tribunal é um ato que ocorre automaticamente após o pagamento da última parcela pelo responsável.",
+                answer: "Errado",
+                rationale: "O Art. 27 exige um ato formal do responsável ('comprovado o recolhimento integral') e um ato subsequente do Tribunal ('o Tribunal expedirá quitação'), não sendo um processo automático."
+            },
+            {
+                question: "Se o responsável não pagar a dívida no prazo, o Tribunal deverá, primeiramente, tentar o desconto em folha e, somente se frustrado, autorizar a cobrança judicial.",
+                answer: "Errado",
+                rationale: "O Art. 28 apresenta as duas medidas como alternativas ('ou'), não estabelecendo uma ordem de preferência ou subsidiariedade entre elas. A escolha é discricionária do Tribunal."
+            },
+            {
+                question: "A cobrança judicial da dívida é de competência do Ministério Público que atua junto ao Tribunal de Contas da União.",
+                answer: "Certo",
+                rationale: "O Art. 28, inciso II, atribui expressamente a cobrança judicial 'por intermédio do Ministério Público junto ao Tribunal'."
+            },
+            {
+                question: "A publicação da decisão terminativa, por não analisar o mérito, dispensa a apresentação dos seus fundamentos.",
+                answer: "Errado",
+                rationale: "O Art. 29 exige que a decisão terminativa seja publicada 'acompanhada de seus fundamentos'."
+            },
+            {
+                question: "O prazo para o responsável se manifestar após a rejeição de sua defesa começa a contar da data de publicação do ato no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 30, inciso I, alínea 'b', o prazo se conta do recebimento da comunicação de rejeição pelo responsável."
+            },
+            {
+                question: "A comunicação de diligência pode ser efetivada mediante ciência do interessado, na forma estabelecida no Regimento Interno.",
+                answer: "Certo",
+                rationale: "O Art. 22, inciso I, prevê essa como uma das formas válidas de comunicação."
+            },
+            {
+                question: "A publicação do acórdão de contas regulares é o que constitui o certificado de quitação plena.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao que dispõe o Art. 23, inciso I."
+            },
+            {
+                question: "A eficácia de título executivo de uma decisão do TCU depende de homologação pelo Poder Judiciário.",
+                answer: "Errado",
+                rationale: "A lei confere eficácia de título executivo à própria decisão do Tribunal (Art. 24), não exigindo qualquer ato de homologação judicial para tanto."
+            },
+            {
+                question: "O prazo para pagamento voluntário da dívida imposta pelo TCU é definido no próprio acórdão condenatório.",
+                answer: "Errado",
+                rationale: "O Art. 25 estabelece que o prazo será 'estabelecido no Regimento Interno', sendo uma norma geral, e não definida caso a caso no acórdão."
+            },
+            {
+                question: "A autorização para parcelamento do débito suspende a incidência de acréscimos legais.",
+                answer: "Errado",
+                rationale: "Ao contrário, o Art. 26 determina que, no parcelamento, incidirão sobre cada parcela 'os correspondentes acréscimos legais'."
+            },
+            {
+                question: "O desconto em folha de pagamento para quitação de débito com o TCU independe dos limites previstos em outras legislações.",
+                answer: "Errado",
+                rationale: "O Art. 28, inciso I, é explícito ao determinar que o desconto deve observar 'os limites previstos na legislação pertinente'."
+            },
+            {
+                question: "A notificação por edital somente pode ser utilizada após comprovada a tentativa de notificação por via postal.",
+                answer: "Certo",
+                rationale: "Embora o artigo não detalhe a ordem, a expressão 'quando o seu destinatário não for localizado' (Art. 22, III) pressupõe que houve uma tentativa prévia de localização por outros meios, como o postal (inciso II), que é o padrão."
+            },
+            {
+                question: "O acórdão que julga contas irregulares é fundamento para a autoridade competente aplicar sanções previstas na própria Lei Orgânica do TCU.",
+                answer: "Certo",
+                rationale: "O Art. 23, inciso III, alínea 'c', remete aos arts. 60 e 61, que estão contidos na Lei Orgânica do TCU."
+            },
+            {
+                question: "Em qualquer caso, os prazos processuais no âmbito do TCU contam-se a partir da publicação do ato no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "Esta afirmação generaliza incorretamente. O Art. 30 estabelece regras diferentes: para comunicações diretas (citação, audiência, etc.), conta-se do recebimento; para os demais casos, da publicação."
+            },
+            {
+                question: "O vencimento antecipado do saldo devedor em caso de inadimplência de uma parcela é automático.",
+                answer: "Certo",
+                rationale: "O parágrafo único do Art. 26 usa o verbo 'importará', que tem natureza impositiva e automática, não dependendo de nova decisão do Tribunal para ocorrer."
+            },
+            {
+                question: "A quitação expedida pelo Tribunal após o pagamento refere-se tanto ao débito principal quanto à multa aplicada.",
+                answer: "Certo",
+                rationale: "O Art. 27 menciona que o Tribunal expedirá 'quitação do débito ou da multa', abrangendo ambas as situações."
+            },
+            {
+                question: "O Tribunal pode determinar o desconto em salário de um responsável, mas não em seus proventos de aposentadoria.",
+                answer: "Errado",
+                rationale: "O Art. 28, inciso I, autoriza o desconto em 'vencimentos, salários ou proventos do responsável'."
+            },
+            {
+                question: "O prazo para responder a uma audiência conta-se da data de recebimento da comunicação pelo responsável.",
+                answer: "Certo",
+                rationale: "A afirmação está em conformidade com o Art. 30, inciso I, alínea 'a'."
+            },
+            {
+                question: "A decisão de não autorizar o parcelamento de um débito deve ser, obrigatoriamente, fundamentada pelo Tribunal.",
+                answer: "Certo",
+                rationale: "Embora o Art. 26 preveja uma faculdade ('poderá'), todos os atos da administração pública, especialmente os decisórios que negam um pedido, devem ser motivados, em obediência ao princípio constitucional da motivação. A questão, embora inferencial, está correta no contexto do direito administrativo."
+            },
+            {
+                question: "Apenas a decisão definitiva precisa ser formalizada em acórdão.",
+                answer: "Certo",
+                rationale: "O Art. 23 refere-se especificamente à 'decisão definitiva' como aquela a ser formalizada por acórdão. As decisões preliminares são formalizadas por despachos do Relator ou decisões interlocutórias do colegiado, e a terminativa, por decisão simples."
+            },
+            {
+                question: "A ciência do responsável, como forma de comunicação, tem seus procedimentos detalhados no corpo da própria lei.",
+                answer: "Errado",
+                rationale: "O Art. 22, inciso I, estabelece que a ciência se dará 'na forma estabelecida no Regimento Interno', remetendo a uma norma infralegal para seu detalhamento."
+            },
+            {
+                question: "A comunicação de rejeição dos fundamentos da defesa, conforme o parágrafo único do art. 22, pode ser realizada por edital caso o responsável não seja localizado.",
+                answer: "Certo",
+                rationale: "O parágrafo único do Art. 22 remete ao caput do mesmo artigo para as formas de comunicação. O inciso III do caput prevê a utilização de edital quando o destinatário não for localizado."
+            },
+            {
+                question: "A notificação por correio, para ser considerada válida, exige apenas o comprovante de postagem da carta registrada, sendo dispensável o aviso de recebimento.",
+                answer: "Errado",
+                rationale: "O Art. 22, inciso II, é específico ao exigir que a comunicação pelo correio se dê mediante carta registrada, com aviso de recebimento, que é o que comprova a entrega ao destinatário."
+            },
+            {
+                question: "O certificado de quitação plena, decorrente do julgamento de contas regulares, e o certificado de quitação com determinação, decorrente de contas regulares com ressalva, são ambos formalizados pela publicação de um acórdão no Diário Oficial da União.",
+                answer: "Certo",
+                rationale: "O Art. 23 estabelece que a decisão definitiva (que abrange os três tipos de julgamento) é formalizada por acórdão, e sua publicação constitui os respectivos certificados de quitação."
+            },
+            {
+                question: "Se o responsável não comprovar o recolhimento do débito no prazo, a própria decisão do TCU, já publicada, servirá como título executivo para a cobrança judicial.",
+                answer: "Certo",
+                rationale: "A afirmação está correta. O Art. 23, inciso III, alínea 'b', define que a decisão se torna 'título executivo bastante para cobrança judicial da dívida (...) se não recolhida no prazo pelo responsável'."
+            },
+            {
+                question: "A decisão do Tribunal torna a dívida líquida e certa, mas a sua eficácia como título executivo depende da inscrição na Dívida Ativa da União.",
+                answer: "Errado",
+                rationale: "Os artigos 23 (III, 'b') e 24 conferem à própria decisão do TCU a eficácia de título executivo, não a condicionando a nenhum ato posterior de inscrição em Dívida Ativa."
+            },
+            {
+                question: "A notificação para pagamento do Art. 25 é o ato processual que inaugura o prazo para o devedor quitar voluntariamente a dívida fixada no acórdão.",
+                answer: "Certo",
+                rationale: "Exato. A notificação (Art. 25) é a comunicação formal ao responsável sobre a sua obrigação de pagar (constituída pelo acórdão do Art. 23), dando início ao prazo para tal."
+            },
+            {
+                question: "O parcelamento da dívida, uma vez autorizado, impede o vencimento antecipado do saldo devedor, mesmo em caso de inadimplência de uma das parcelas.",
+                answer: "Errado",
+                rationale: "O parágrafo único do Art. 26 prevê exatamente o contrário: 'A falta de recolhimento de qualquer parcela importará no vencimento antecipado do saldo devedor'."
+            },
+            {
+                question: "O Tribunal só poderá autorizar o parcelamento de débitos, não se aplicando essa faculdade às multas cominadas.",
+                answer: "Errado",
+                rationale: "O Art. 26 refere-se à 'importância devida', um termo genérico que abrange tanto débitos quanto multas, conforme se depreende da leitura conjunta com os artigos 19, 24 e 25."
+            },
+            {
+                question: "A expedição da quitação do débito pelo Tribunal, prevista no Art. 27, é o ato que formalmente encerra a obrigação de pagamento do responsável no âmbito da Corte de Contas.",
+                answer: "Certo",
+                rationale: "O Art. 27 estabelece que, após a comprovação do recolhimento integral, o Tribunal expedirá a quitação, extinguindo a obrigação financeira dentro daquele processo."
+            },
+            {
+                question: "Se o responsável não pagar a dívida, o Tribunal deverá obrigatoriamente autorizar a cobrança judicial, sendo o desconto em folha uma medida secundária.",
+                answer: "Errado",
+                rationale: "O Art. 28 estabelece que o Tribunal poderá adotar as medidas, indicando discricionariedade. Além disso, as medidas são alternativas ('ou'), sem hierarquia entre elas."
+            },
+            {
+                question: "A cobrança judicial da dívida autorizada pelo TCU dispensa o ajuizamento de uma ação de conhecimento, pois o acórdão já é um título executivo.",
+                answer: "Certo",
+                rationale: "A afirmação está correta. Sendo a decisão do TCU um título executivo (Art. 24), a cobrança judicial se dá por meio de uma ação de execução, que é mais célere por não discutir o mérito da dívida."
+            },
+            {
+                question: "A publicação da decisão terminativa é obrigatória, assim como a da decisão definitiva.",
+                answer: "Certo",
+                rationale: "Sim. O Art. 29 exige a publicação da decisão terminativa, e o Art. 23 exige a publicação da decisão definitiva (acórdão). Ambas são obrigatórias."
+            },
+            {
+                question: "O prazo para responder a uma citação conta-se da data em que o aviso de recebimento da carta é assinado pelo destinatário.",
+                answer: "Certo",
+                rationale: "O Art. 30, inciso I, estabelece a contagem 'do recebimento pelo responsável', o que, no caso de envio pelo correio (Art. 22, II), é materializado pela assinatura no aviso de recebimento."
+            },
+            {
+                question: "A comunicação por edital é aplicável tanto para a citação quanto para a notificação de pagamento.",
+                answer: "Certo",
+                rationale: "O Art. 22, que prevê o edital no inciso III, aplica-se a 'citação, a audiência, a comunicação de diligência ou a notificação'."
+            },
+            {
+                question: "A quitação conferida pelo Art. 27 (após o pagamento) tem a mesma natureza jurídica da quitação plena conferida pelo Art. 23, I (contas regulares).",
+                answer: "Errado",
+                rationale: "Não. A quitação plena do Art. 23, I, atesta a regularidade da gestão. A quitação do Art. 27 apenas atesta o cumprimento de uma obrigação financeira decorrente de uma gestão julgada irregular, não tornando a gestão regular."
+            },
+            {
+                question: "O Tribunal pode autorizar o parcelamento de uma dívida mesmo que o processo já esteja na fase de cobrança judicial.",
+                answer: "Certo",
+                rationale: "O Art. 26 permite o parcelamento 'em qualquer fase do processo'. A cobrança judicial é uma fase do processo de execução da decisão do TCU, portanto, a autorização ainda é possível, embora dependa de negociação com o órgão de execução (MP junto ao TCU)."
+            },
+            {
+                question: "O vencimento antecipado do saldo devedor, em caso de inadimplência no parcelamento, depende de nova decisão do Tribunal para ter eficácia.",
+                answer: "Errado",
+                rationale: "O termo 'importará' no parágrafo único do Art. 26 indica que o vencimento antecipado é uma consequência automática (ope legis) da inadimplência, não necessitando de nova decisão para se configurar."
+            },
+            {
+                question: "O desconto em proventos, previsto no Art. 28, I, só pode ser determinado se o responsável ainda for servidor público ativo.",
+                answer: "Errado",
+                rationale: "O Art. 28, I, menciona 'vencimentos, salários ou proventos'. Proventos é o termo utilizado para os rendimentos de inativos (aposentados e pensionistas), abrangendo, portanto, também os não ativos."
+            },
+            {
+                question: "Se um responsável é notificado para pagar uma multa e não o faz, a decisão que aplicou a sanção servirá de título executivo para a cobrança judicial.",
+                answer: "Certo",
+                rationale: "O Art. 24 é explícito ao afirmar que a decisão 'de que resulte (...) cominação de multa' tem eficácia de título executivo."
+            },
+            {
+                question: "Todos os prazos mencionados na referida lei são contados em dias úteis.",
+                answer: "Errado",
+                rationale: "Os artigos fornecidos não especificam a forma de contagem dos prazos (dias úteis ou corridos). Isso geralmente é definido no Regimento Interno. A afirmação não pode ser sustentada pelo texto legal apresentado, sendo, portanto, incorreta."
+            },
+            {
+                question: "A comunicação da rejeição da defesa e a notificação para pagamento são atos distintos, que ocorrem em momentos processuais diferentes.",
+                answer: "Certo",
+                rationale: "Sim. A comunicação da rejeição da defesa (Art. 22, parágrafo único) ocorre após o julgamento de mérito. A notificação para pagamento (Art. 25) é o ato posterior que dá início ao prazo para a quitação voluntária."
+            },
+            {
+                question: "A obrigação de pagar a dívida nasce para o responsável a partir do momento em que ele é notificado da decisão.",
+                answer: "Errado",
+                rationale: "A obrigação nasce com o julgamento de mérito, e sua eficácia se inicia com a publicação do acórdão (Art. 23, III, 'a'). A notificação (Art. 25) é o ato que o informa oficialmente dessa obrigação e inaugura o prazo para cumpri-la voluntariamente."
+            },
+            {
+                question: "A eficácia do acórdão como título executivo é uma condição que surge apenas se a obrigação de pagamento voluntário não for cumprida.",
+                answer: "Certo",
+                rationale: "O Art. 23, inciso III, alínea 'b', deixa claro que a decisão se torna título executivo 'se não recolhida no prazo pelo responsável'."
+            },
+            {
+                question: "O recolhimento da primeira parcela de um acordo de parcelamento já é suficiente para o Tribunal expedir uma quitação parcial da dívida.",
+                answer: "Errado",
+                rationale: "O Art. 27 é claro ao condicionar a expedição da quitação ao 'recolhimento integral'. Não há previsão de quitação parcial."
+            },
+            {
+                question: "A autorização para cobrança judicial da dívida é um ato discricionário do Tribunal.",
+                answer: "Certo",
+                rationale: "O Art. 28 utiliza o verbo 'poderá', o que caracteriza a decisão de autorizar a cobrança judicial como um ato discricionário, a ser ponderado pelo Tribunal."
+            },
+            {
+                question: "Se o Regimento Interno for omisso, o prazo para responder a uma notificação contar-se-á da data de publicação do acórdão no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "O Art. 30, inciso I, alínea 'd', estabelece que o prazo para notificação se conta do recebimento. A regra geral da publicação (inciso III) aplica-se apenas aos 'demais casos' não listados nos incisos I e II."
+            },
+            {
+                question: "A decisão de arquivamento de um processo de contas iliquidáveis é um exemplo de decisão terminativa.",
+                answer: "Certo",
+                rationale: "Sim. O Art. 21 ordena o trancamento e arquivamento das contas iliquidáveis, e essa é a definição de decisão terminativa (conforme Art. 10, § 3º, de um prompt anterior, mas logicamente dedutível do contexto). O Art. 29 confirma isso ao tratar da publicação da 'decisão terminativa'."
+            },
+            {
+                question: "A ciência do interessado pode ser obtida por meio de assinatura em um documento processual, como a retirada dos autos em carga ou vista.",
+                answer: "Certo",
+                rationale: "O Art. 22, inciso I, remete ao Regimento Interno, que historicamente prevê essas formas de 'ciência' como válidas para iniciar a contagem de prazos. A afirmação é compatível com a norma."
+            },
+            {
+                question: "O não pagamento de uma dívida com o TCU pode resultar na perda do cargo público do responsável, por determinação direta do próprio Tribunal.",
+                answer: "Errado",
+                rationale: "As sanções que o TCU pode aplicar diretamente são multa e débito. Sanções como perda do cargo (previstas nos arts. 60 e 61, mencionados no Art. 23) são efetivadas pela 'autoridade competente', não diretamente pelo TCU."
+            },
+            {
+                question: "O prazo para responder a uma diligência, se o responsável não for localizado, conta-se da data da última tentativa de entrega da carta registrada.",
+                answer: "Errado",
+                rationale: "O Art. 30, inciso II, é claro: se o responsável não for localizado, o prazo se conta da 'publicação de edital no Diário Oficial da União'."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
