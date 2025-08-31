@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recursos</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Recursos</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 60</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O direito à ampla defesa é assegurado ao responsável em um processo de contas, mas não se estende ao interessado.",
+                answer: "Errado",
+                rationale: "O Art. 31 garante o direito à ampla defesa 'ao responsável ou interessado', abrangendo ambos."
+            },
+            {
+                question: "A ampla defesa é garantida apenas na fase inicial do processo de julgamento de contas, antes da prolação da decisão definitiva.",
+                answer: "Errado",
+                rationale: "O Art. 31 é claro ao assegurar a ampla defesa 'em todas as etapas do processo de julgamento de contas'."
+            },
+            {
+                question: "Além dos recursos de reconsideração, embargos de declaração e revisão, cabe apelação das decisões proferidas em processos de contas.",
+                answer: "Errado",
+                rationale: "O Art. 32 apresenta um rol taxativo dos recursos cabíveis, que são apenas os três mencionados: reconsideração, embargos de declaração e revisão."
+            },
+            {
+                question: "Um recurso interposto fora do prazo legal não será conhecido pelo Tribunal, sem exceções.",
+                answer: "Errado",
+                rationale: "O parágrafo único do Art. 32 estabelece uma exceção: o recurso poderá ser conhecido 'em razão da superveniência de fatos novos na forma prevista no Regimento Interno'."
+            },
+            {
+                question: "O recurso de reconsideração possui efeito apenas devolutivo, não suspendendo os efeitos da decisão recorrida.",
+                answer: "Errado",
+                rationale: "O Art. 33 afirma expressamente que o recurso de reconsideração 'terá efeito suspensivo'."
+            },
+            {
+                question: "O recurso de reconsideração deve ser interposto no prazo de quinze dias.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao prazo estipulado no Art. 33."
+            },
+            {
+                question: "O recurso de reconsideração será apreciado pela instância superior àquela que proferiu a decisão recorrida.",
+                answer: "Errado",
+                rationale: "O Art. 33 determina que o recurso 'será apreciado por quem houver proferido a decisão recorrida', caracterizando um pedido de reexame à própria autoridade."
+            },
+            {
+                question: "Apenas o responsável pode formular o recurso de reconsideração.",
+                answer: "Errado",
+                rationale: "O Art. 33 legitima 'o responsável ou interessado, ou pelo Ministério Público junto ao Tribunal' para a interposição do recurso."
+            },
+            {
+                question: "Cabem embargos de declaração para reformar o mérito de uma decisão com a qual a parte não concorde.",
+                answer: "Errado",
+                rationale: "O Art. 34 restringe a finalidade dos embargos de declaração à correção de 'obscuridade, omissão ou contradição da decisão recorrida', não servindo para reanálise de mérito."
+            },
+            {
+                question: "O prazo para oposição dos embargos de declaração é de dez dias.",
+                answer: "Certo",
+                rationale: "A afirmação está correta e corresponde ao prazo previsto no § 1° do Art. 34."
+            },
+            {
+                question: "A oposição de embargos de declaração interrompe os prazos para a interposição de outros recursos.",
+                answer: "Errado",
+                rationale: "O § 2° do Art. 34 estabelece que os embargos de declaração suspendem os prazos. A suspensão, diferentemente da interrupção, faz com que o prazo volte a correr de onde parou."
+            },
+            {
+                question: "A oposição de embargos de declaração suspende o prazo apenas para o recurso de reconsideração, não afetando o prazo para o recurso de revisão.",
+                answer: "Errado",
+                rationale: "O § 2° do Art. 34 é explícito ao afirmar que os embargos suspendem os prazos 'para interposição dos recursos previstos nos incisos I (reconsideração) e III (revisão) do art. 32'."
+            },
+            {
+                question: "O recurso de revisão é cabível contra qualquer tipo de decisão proferida em processo de contas.",
+                answer: "Errado",
+                rationale: "O caput do Art. 35 restringe o cabimento do recurso de revisão à 'decisão definitiva'."
+            },
+            {
+                question: "O recurso de revisão, assim como o de reconsideração, possui efeito suspensivo.",
+                answer: "Errado",
+                rationale: "O caput do Art. 35 afirma que o recurso de revisão será interposto 'sem efeito suspensivo'."
+            },
+            {
+                question: "O prazo para interposição do recurso de revisão é de cinco anos, contados da data do trânsito em julgado da decisão.",
+                answer: "Errado",
+                rationale: "O Art. 35 estabelece que o prazo de cinco anos é contado 'na forma prevista no inciso III do art. 30', ou seja, da publicação do acórdão no Diário Oficial da União, e não do trânsito em julgado."
+            },
+            {
+                question: "Os sucessores do responsável são partes legítimas para interpor recurso de revisão.",
+                answer: "Certo",
+                rationale: "O Art. 35 legitima expressamente 'o responsável, seus sucessores, ou pelo Ministério Público junto ao Tribunal' para a interposição do recurso."
+            },
+            {
+                question: "A alegação de erro de cálculo nas contas é um dos fundamentos válidos para a interposição de recurso de revisão.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente ao disposto no Art. 35, inciso I."
+            },
+            {
+                question: "O recurso de revisão pode ser fundamentado na superveniência de documentos novos, ainda que estes não tenham eficácia sobre a prova já produzida.",
+                answer: "Errado",
+                rationale: "O Art. 35, inciso III, exige que os documentos novos tenham 'eficácia sobre a prova produzida'."
+            },
+            {
+                question: "A decisão que dá provimento a um recurso de revisão corrigirá apenas o erro específico que fundamentou o recurso.",
+                answer: "Errado",
+                rationale: "O parágrafo único do Art. 35 estabelece que a decisão 'ensejará a correção de todo e qualquer erro ou engano apurado', não se limitando ao fundamento original do recurso."
+            },
+            {
+                question: "O recurso de reconsideração pode ser formulado por escrito mais de uma vez, desde que dentro do prazo legal.",
+                answer: "Errado",
+                rationale: "O Art. 33 é taxativo ao afirmar que o recurso de reconsideração poderá ser formulado 'uma só vez'."
+            },
+            {
+                question: "Os embargos de declaração suspendem o prazo para o cumprimento da decisão embargada.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde à primeira parte do § 2° do Art. 34."
+            },
+            {
+                question: "O recurso de revisão será sempre julgado pelo Plenário do Tribunal.",
+                answer: "Certo",
+                rationale: "O caput do Art. 35 determina que o recurso de revisão será interposto 'ao Plenário'."
+            },
+            {
+                question: "A insuficiência de documentos que fundamentaram a decisão recorrida é motivo para a interposição de recurso de revisão.",
+                answer: "Certo",
+                rationale: "O Art. 35, inciso II, prevê como fundamento a 'falsidade ou insuficiência de documentos'."
+            },
+            {
+                question: "Um recurso de reconsideração interposto no vigésimo dia após a ciência da decisão será conhecido se o recorrente alegar a superveniência de fatos novos.",
+                answer: "Certo",
+                rationale: "A afirmação descreve uma situação que se enquadra na exceção do parágrafo único do Art. 32, que permite o conhecimento de recurso intempestivo em razão da superveniência de fatos novos, na forma do Regimento Interno."
+            },
+            {
+                question: "A contradição entre a fundamentação e o dispositivo de um acórdão pode ser sanada por meio de embargos de declaração.",
+                answer: "Certo",
+                rationale: "A contradição é uma das hipóteses de cabimento dos embargos de declaração, conforme o caput do Art. 34."
+            },
+            {
+                question: "O Ministério Público junto ao Tribunal não tem legitimidade para interpor embargos de declaração.",
+                answer: "Errado",
+                rationale: "O § 1° do Art. 34 legitima expressamente 'o responsável ou interessado, ou pelo Ministério Público junto ao Tribunal' para opor os embargos."
+            },
+            {
+                question: "O recurso de revisão não é cabível contra uma decisão terminativa que considerou as contas iliquidáveis.",
+                answer: "Certo",
+                rationale: "O Art. 35 restringe o cabimento do recurso de revisão à 'decisão definitiva'. A decisão que considera as contas iliquidáveis é terminativa."
+            },
+            {
+                question: "O recurso de reconsideração e os embargos de declaração têm o mesmo prazo para interposição.",
+                answer: "Errado",
+                rationale: "Os prazos são distintos. Para o recurso de reconsideração, o prazo é de quinze dias (Art. 33). Para os embargos de declaração, o prazo é de dez dias (Art. 34, § 1°)."
+            },
+            {
+                question: "A falsidade de um documento que embasou uma decisão definitiva do TCU pode ser arguida em recurso de revisão.",
+                answer: "Certo",
+                rationale: "O Art. 35, inciso II, prevê como fundamento a 'falsidade ou insuficiência de documentos'."
+            },
+            {
+                question: "Ao dar provimento a um recurso de revisão, o Tribunal está limitado a corrigir apenas erros de cálculo ou enganos formais.",
+                answer: "Errado",
+                rationale: "O parágrafo único do Art. 35 é amplo, determinando a correção de 'todo e qualquer erro ou engano apurado', o que pode incluir o próprio mérito da decisão, e não apenas aspectos formais."
+            },
+            {
+                question: "O direito à ampla defesa, assegurado no art. 31, inclui a prerrogativa de interpor os recursos previstos no art. 32.",
+                answer: "Certo",
+                rationale: "O direito de recorrer é uma das manifestações mais importantes do princípio da ampla defesa. Os recursos listados no art. 32 são os instrumentos processuais que materializam essa garantia na fase pós-decisão."
+            },
+            {
+                question: "O rol de recursos previsto no art. 32 é exemplificativo, podendo o Regimento Interno criar outras modalidades recursais.",
+                answer: "Errado",
+                rationale: "O rol do art. 32 é taxativo (numerus clausus). A criação de recursos é matéria de lei em sentido formal, não podendo ser feita por norma infralegal como o Regimento Interno."
+            },
+            {
+                question: "A superveniência de fatos novos, prevista no parágrafo único do art. 32, é uma hipótese que autoriza o conhecimento de um recurso de reconsideração interposto fora do prazo.",
+                answer: "Certo",
+                rationale: "O parágrafo único do art. 32 refere-se a 'recurso' de forma genérica, aplicando-se, portanto, a qualquer modalidade recursal, incluindo o de reconsideração, desde que preenchidos os requisitos do Regimento Interno."
+            },
+            {
+                question: "O efeito suspensivo do recurso de reconsideração impede que a decisão recorrida produza qualquer efeito até o julgamento do recurso.",
+                answer: "Certo",
+                rationale: "Essa é a exata definição do efeito suspensivo, atribuído ao recurso de reconsideração pelo caput do art. 33."
+            },
+            {
+                question: "O recurso de reconsideração pode ser interposto oralmente em sessão, sendo posteriormente reduzido a termo.",
+                answer: "Errado",
+                rationale: "O art. 33 exige que o recurso seja formulado 'por escrito'."
+            },
+            {
+                question: "Um interessado que não foi parte no processo original pode interpor recurso de reconsideração, desde que demonstre seu interesse jurídico.",
+                answer: "Certo",
+                rationale: "O art. 33 legitima o 'responsável ou interessado' para interpor o recurso. A figura do interessado abrange terceiros que possam ser afetados pela decisão."
+            },
+            {
+                question: "Os embargos de declaração são cabíveis quando a parte discorda da justiça da decisão, buscando um novo julgamento de mérito.",
+                answer: "Errado",
+                rationale: "A finalidade dos embargos de declaração é restrita. O art. 34 limita seu cabimento à correção de 'obscuridade, omissão ou contradição', não permitindo a rediscussão do mérito."
+            },
+            {
+                question: "A oposição de embargos de declaração devolve o prazo integral para a interposição de recurso de reconsideração ou de revisão.",
+                answer: "Errado",
+                rationale: "O art. 34, § 2º, estabelece que os embargos suspendem os prazos. Na suspensão, o prazo remanescente volta a correr após a decisão dos embargos. A devolução do prazo integral ocorre na interrupção, que não é o caso."
+            },
+            {
+                question: "O Ministério Público junto ao Tribunal tem legitimidade para opor embargos de declaração.",
+                answer: "Certo",
+                rationale: "O art. 34, § 1º, confere legitimidade ao 'responsável ou interessado, ou pelo Ministério Público junto ao Tribunal'."
+            },
+            {
+                question: "O recurso de revisão pode ser interposto a qualquer tempo, desde que surjam documentos novos.",
+                answer: "Errado",
+                rationale: "O art. 35 estabelece um prazo decadencial de cinco anos para a interposição do recurso de revisão, mesmo na hipótese de documentos novos."
+            },
+            {
+                question: "O recurso de revisão será julgado pelo mesmo órgão que proferiu a decisão definitiva recorrida.",
+                answer: "Errado",
+                rationale: "O art. 35 é claro ao determinar que o recurso de revisão caberá 'ao Plenário', indicando que, se a decisão foi de uma Câmara, o julgamento do recurso será, necessariamente, pelo órgão máximo do Tribunal."
+            },
+            {
+                question: "A insuficiência de documentos que embasaram a decisão é fundamento para o recurso de revisão, mas a mera alegação de injustiça da decisão não é.",
+                answer: "Certo",
+                rationale: "A afirmação está correta. O art. 35, inciso II, prevê a 'insuficiência de documentos' como fundamento. O mero inconformismo com o mérito da decisão não se enquadra nas hipóteses taxativas do artigo."
+            },
+            {
+                question: "Se o Tribunal der provimento a um recurso de revisão fundamentado em erro de cálculo, a nova decisão corrigirá apenas o cálculo, mantendo-se inalterados os demais pontos do acórdão original.",
+                answer: "Errado",
+                rationale: "O parágrafo único do art. 35 estabelece que a nova decisão 'ensejará a correção de todo e qualquer erro ou engano apurado', permitindo uma revisão ampla da decisão original."
+            },
+            {
+                question: "Os sucessores do responsável não possuem legitimidade para interpor recurso de reconsideração.",
+                answer: "Certo",
+                rationale: "O art. 33 lista como legitimados o responsável, o interessado e o Ministério Público, não mencionando os sucessores. A menção expressa aos sucessores no art. 35 (recurso de revisão) reforça a sua exclusão do art. 33."
+            },
+            {
+                question: "A contagem do prazo para o recurso de reconsideração e para os embargos de declaração inicia-se na mesma forma.",
+                answer: "Certo",
+                rationale: "Sim. Tanto o art. 33 quanto o art. 34, § 1º, afirmam que os respectivos prazos são 'contados na forma prevista no art. 30', que estabelece as regras gerais de contagem."
+            },
+            {
+                question: "O recurso de reconsideração e o recurso de revisão podem ser interpostos apenas uma única vez.",
+                answer: "Certo",
+                rationale: "O art. 33 e o art. 35 estabelecem, para o recurso de reconsideração e para o recurso de revisão, respectivamente, que podem ser formulados 'uma só vez'."
+            },
+            {
+                question: "A apresentação de um documento que já existia à época do processo original, mas que o responsável não teve acesso, pode fundamentar um recurso de revisão.",
+                answer: "Certo",
+                rationale: "Esta situação se enquadra na hipótese de 'superveniência de documentos novos com eficácia sobre a prova produzida' (art. 35, III). O termo 'novos' refere-se à sua apresentação no processo, e não à data de sua criação."
+            },
+            {
+                question: "Os embargos de declaração não possuem efeito suspensivo sobre a decisão embargada, apenas sobre os prazos recursais.",
+                answer: "Errado",
+                rationale: "O art. 34, § 2º, estabelece que os embargos suspendem 'os prazos para cumprimento da decisão embargada', o que, na prática, significa que os efeitos da decisão (como a obrigação de pagar um débito) ficam suspensos."
+            },
+            {
+                question: "A ausência de um fundamento legal que deveria constar na decisão caracteriza uma omissão, passível de correção via embargos de declaração.",
+                answer: "Certo",
+                rationale: "A omissão de um ponto sobre o qual o julgador deveria ter se manifestado é uma das hipóteses clássicas de cabimento dos embargos de declaração, conforme o art. 34."
+            },
+            {
+                question: "Um recurso de revisão não será conhecido se for interposto no sexto ano após a publicação do acórdão.",
+                answer: "Certo",
+                rationale: "O prazo para o recurso de revisão é de cinco anos (art. 35). A interposição após esse período acarreta a sua intempestividade e o não conhecimento."
+            },
+            {
+                question: "O recurso de reconsideração é cabível contra a decisão definitiva, mas não contra a decisão terminativa.",
+                answer: "Certo",
+                rationale: "O recurso de reconsideração, por visar o reexame do mérito, é cabível contra a decisão definitiva. Contra a decisão terminativa, que não analisa o mérito, o instrumento cabível seria outro, como o agravo, previsto no Regimento Interno (não nos artigos fornecidos)."
+            },
+            {
+                question: "Uma decisão de Câmara que nega provimento a um recurso de reconsideração pode ser objeto de recurso de revisão ao Plenário.",
+                answer: "Certo",
+                rationale: "Sim. A decisão que julga o recurso de reconsideração é uma decisão definitiva. Portanto, se preenchidos os requisitos do art. 35 (prazo e fundamentos), ela pode ser atacada via recurso de revisão."
+            },
+            {
+                question: "A apresentação de embargos de declaração no 11º dia após a ciência da decisão impede o seu conhecimento.",
+                answer: "Certo",
+                rationale: "O prazo para os embargos é de dez dias (art. 34, § 1º). A interposição no 11º dia é intempestiva e, conforme a regra geral do art. 32, parágrafo único, o recurso não será conhecido."
+            },
+            {
+                question: "O efeito suspensivo do recurso de reconsideração se aplica automaticamente, não dependendo de pedido da parte ou de decisão do relator.",
+                answer: "Certo",
+                rationale: "O art. 33 afirma que o recurso 'terá efeito suspensivo', tratando-se de um efeito ope legis (que decorre da lei), e não ope judicis (que depende de decisão judicial/administrativa)."
+            },
+            {
+                question: "O recurso de revisão pode ser utilizado para corrigir uma contradição presente no acórdão.",
+                answer: "Errado",
+                rationale: "A contradição é vício a ser sanado por embargos de declaração (art. 34). O recurso de revisão possui fundamentos próprios e restritos, listados no art. 35."
+            },
+            {
+                question: "Um recurso de reconsideração interposto por um interessado terá o mesmo trâmite e os mesmos efeitos de um recurso interposto pelo responsável.",
+                answer: "Certo",
+                rationale: "A lei (art. 33) não faz distinção entre os legitimados no que tange ao processamento, prazo e efeitos do recurso de reconsideração."
+            },
+            {
+                question: "O fato de a decisão que julga um recurso de revisão corrigir 'todo e qualquer erro' significa que o Tribunal pode agravar a situação do recorrente.",
+                answer: "Errado",
+                rationale: "O parágrafo único do art. 35 deve ser interpretado em harmonia com o princípio da non reformatio in pejus (proibição da reforma para pior) em sede de recurso exclusivo do interessado/responsável. Assim, o Tribunal pode corrigir todos os erros, desde que isso não piore a situação do recorrente."
+            },
+            {
+                question: "Um recurso de reconsideração contra decisão do Plenário será julgado pelo próprio Plenário.",
+                answer: "Certo",
+                rationale: "A afirmação está correta, pois o art. 33 estabelece que o recurso será apreciado 'por quem houver proferido a decisão recorrida'."
+            },
+            {
+                question: "O prazo para o recurso de revisão é contado em anos, enquanto os prazos para reconsideração e embargos são contados em dias.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde à literalidade dos artigos: cinco anos para revisão (art. 35), quinze dias para reconsideração (art. 33) e dez dias para embargos (art. 34)."
+            },
+            {
+                question: "A suspensão de prazo gerada pelos embargos de declaração beneficia todos os legitimados a recorrer, mesmo que os embargos tenham sido opostos por apenas um deles.",
+                answer: "Certo",
+                rationale: "O efeito suspensivo dos embargos é objetivo e se aplica ao processo, aproveitando a todos que têm legitimidade para interpor os demais recursos."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
