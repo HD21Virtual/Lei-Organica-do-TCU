@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas Regulares, Regulares com Ressalva, Irregulares e Ilíquidáveis</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Contas Regulares, Regulares com Ressalva, Irregulares e Ilíquidáveis</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O julgamento pela regularidade das contas confere quitação com ressalva ao responsável.",
+                answer: "Errado",
+                rationale: "Conforme o Art. 17, quando o Tribunal julga as contas regulares, ele dará quitação plena ao responsável, e não com ressalva."
+            },
+            {
+                question: "Ao julgar as contas regulares com ressalva, o Tribunal dá quitação ao responsável, mas pode aplicar-lhe multa.",
+                answer: "Errado",
+                rationale: "O Art. 18 estabelece que, no julgamento de contas regulares com ressalva, o Tribunal dará quitação e fará uma determinação para a correção de impropriedades. Não há previsão de aplicação de multa neste artigo."
+            },
+            {
+                question: "A determinação para correção de impropriedades, em caso de contas regulares com ressalva, pode ser dirigida tanto ao responsável original quanto a quem lhe haja sucedido.",
+                answer: "Certo",
+                rationale: "A afirmação está correta e corresponde exatamente ao texto do Art. 18, que direciona a determinação ao responsável 'ou a quem lhe haja sucedido'."
+            },
+            {
+                question: "Quando as contas são julgadas irregulares com a existência de débito, o Tribunal aplicará, obrigatoriamente, a multa prevista no art. 57 desta Lei.",
+                answer: "Errado",
+                rationale: "O Art. 19 estabelece que o Tribunal condenará o responsável ao pagamento da dívida, podendo, ainda, aplicar-lhe a multa. O uso do verbo 'poder' indica uma faculdade (ato discricionário), e não uma obrigação."
+            },
+            {
+                question: "A decisão do TCU que condena o responsável ao pagamento de dívida em contas irregulares é considerada título executivo para fundamentar a respectiva ação de execução.",
+                answer: "Certo",
+                rationale: "A afirmação está em conformidade com a parte final do caput do Art. 19."
+            },
+            {
+                question: "Mesmo não havendo débito, o Tribunal aplicará multa ao responsável se comprovada a omissão no dever de prestar contas.",
+                answer: "Certo",
+                rationale: "O parágrafo único do Art. 19 prevê a aplicação da multa do art. 58, I, quando, sem débito, ficar comprovada qualquer das ocorrências das alíneas 'a' (omissão no dever de prestar contas), 'b' ou 'c' do inciso III do art. 16."
+            },
+            {
+                question: "A multa aplicável em caso de contas irregulares sem débito é a mesma prevista para os casos com débito.",
+                answer: "Errado",
+                rationale: "Não. O Art. 19 estabelece multas distintas. Para casos com débito (caput), pode ser aplicada a multa do art. 57. Para casos sem débito (parágrafo único), aplica-se a multa prevista no inciso I do art. 58."
+            },
+            {
+                question: "Para que as contas sejam consideradas iliquidáveis, basta a ocorrência de caso fortuito ou de força maior que dificulte a apuração.",
+                answer: "Errado",
+                rationale: "O Art. 20 exige mais do que a simples dificuldade. É necessário que o caso fortuito ou de força maior torne materialmente impossível o julgamento de mérito."
+            },
+            {
+                question: "O evento que torna as contas iliquidáveis, como caso fortuito ou força maior, deve ser comprovadamente alheio à vontade do responsável.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde a um requisito expresso no Art. 20 para a caracterização das contas como iliquidáveis."
+            },
+            {
+                question: "Após considerar as contas iliquidáveis, o Tribunal determinará o prosseguimento do processo para apurar responsabilidades residuais.",
+                answer: "Errado",
+                rationale: "O Art. 21 determina o oposto: o Tribunal ordenará o trancamento das contas e o consequente arquivamento do processo."
+            },
+            {
+                question: "O processo de contas iliquidáveis, uma vez arquivado, não poderá ser reaberto em nenhuma hipótese, em respeito à segurança jurídica.",
+                answer: "Errado",
+                rationale: "O § 1° do Art. 21 prevê a possibilidade de desarquivamento e reabertura do processo dentro do prazo de cinco anos, caso surjam novos elementos."
+            },
+            {
+                question: "O prazo para o Tribunal autorizar o desarquivamento de um processo de contas iliquidáveis é de cinco anos, contados da ocorrência do fato que tornou as contas iliquidáveis.",
+                answer: "Errado",
+                rationale: "O marco inicial do prazo de cinco anos, conforme o § 1° do Art. 21, é a publicação da decisão terminativa no Diário Oficial da União, e não a data do fato."
+            },
+            {
+                question: "Transcorrido o prazo de cinco anos sem nova decisão, as contas consideradas iliquidáveis serão automaticamente julgadas regulares com ressalva.",
+                answer: "Errado",
+                rationale: "Conforme o § 2° do Art. 21, transcorrido o prazo, as contas serão consideradas encerradas, com baixa na responsabilidade do administrador, o que não equivale a um julgamento de mérito."
+            },
+            {
+                question: "A finalidade da determinação em contas regulares com ressalva é punir o gestor pelas impropriedades cometidas.",
+                answer: "Errado",
+                rationale: "A finalidade, segundo o Art. 18, é pedagógica e preventiva: determinar a adoção de medidas para 'correção das impropriedades' e 'prevenir a ocorrência de outras semelhantes'."
+            },
+            {
+                question: "Em caso de contas irregulares com débito, a dívida a ser paga pelo responsável será atualizada monetariamente e acrescida de juros de mora.",
+                answer: "Certo",
+                rationale: "O Art. 19, caput, estabelece expressamente a condenação ao pagamento da 'dívida atualizada monetariamente, acrescida dos juros de mora devidos'."
+            },
+            {
+                question: "A ocorrência de prática de ato de gestão ilegal, mesmo que não resulte em débito, sujeita o responsável à aplicação de multa pelo Tribunal.",
+                answer: "Certo",
+                rationale: "O parágrafo único do Art. 19 remete à alínea 'b' do inciso III do art. 16, que trata da 'prática de ato de gestão ilegal', como uma das hipóteses para aplicação de multa mesmo na ausência de débito."
+            },
+            {
+                question: "O trancamento das contas iliquidáveis é uma decisão de mérito, pois analisa a impossibilidade material de julgamento.",
+                answer: "Errado",
+                rationale: "O trancamento é o resultado de uma decisão terminativa (Art. 10, § 3º), que ocorre justamente porque o mérito não pode ser julgado, conforme o Art. 20."
+            },
+            {
+                question: "Qualquer novo elemento é suficiente para autorizar o desarquivamento de um processo de contas iliquidáveis.",
+                answer: "Errado",
+                rationale: "O § 1° do Art. 21 estabelece um critério de suficiência, exigindo 'novos elementos que [o Tribunal] considere suficientes'."
+            },
+            {
+                question: "A baixa na responsabilidade do administrador ocorre cinco anos após a publicação da decisão que considerou as contas iliquidáveis, se não houver nova decisão.",
+                answer: "Certo",
+                rationale: "Esta é a consequência prevista no § 2º do Art. 21 ao término do prazo quinquenal sem nova deliberação."
+            },
+            {
+                question: "A quitação plena é a consequência do julgamento de contas regulares com ressalva.",
+                answer: "Errado",
+                rationale: "A quitação plena (Art. 17) decorre do julgamento de contas regulares. As contas regulares com ressalva (Art. 18) conferem quitação simples, acompanhada de determinação."
+            },
+            {
+                question: "Se o Tribunal julgar as contas irregulares, mas não houver débito, ele não poderá aplicar nenhuma sanção ao responsável.",
+                answer: "Errado",
+                rationale: "O parágrafo único do Art. 19 prevê expressamente a aplicação de multa nessas situações, desde que comprovadas as ocorrências ali listadas."
+            },
+            {
+                question: "Para que uma conta seja considerada iliquidável, a impossibilidade de julgamento de mérito deve ser de natureza material.",
+                answer: "Certo",
+                rationale: "O Art. 20 exige que o caso fortuito ou a força maior torne 'materialmente impossível o julgamento de mérito'."
+            },
+            {
+                question: "A decisão que ordena o trancamento das contas iliquidáveis deve ser publicada no Diário Oficial da União para que o prazo de cinco anos para desarquivamento comece a fluir.",
+                answer: "Certo",
+                rationale: "O § 1° do Art. 21 estabelece a 'publicação da decisão terminativa no Diário Oficial da União' como o marco inicial para a contagem do prazo de cinco anos."
+            },
+            {
+                question: "Após o desarquivamento do processo de contas iliquidáveis, o Tribunal determinará que se ultime a respectiva tomada ou prestação de contas.",
+                answer: "Certo",
+                rationale: "A afirmação corresponde exatamente à providência a ser tomada após a autorização para o desarquivamento, conforme o § 1º do Art. 21."
+            },
+            {
+                question: "A condenação em débito e a aplicação de multa são medidas cumulativas e obrigatórias em todos os casos de contas irregulares.",
+                answer: "Errado",
+                rationale: "Não são. Em casos sem débito, aplica-se apenas multa (Art. 19, parágrafo único). Em casos com débito, a condenação é obrigatória, mas a multa é facultativa (Art. 19, caput)."
+            },
+            {
+                question: "O sucessor de um responsável cujas contas foram julgadas regulares com ressalva pode ser o destinatário da determinação para corrigir as falhas.",
+                answer: "Certo",
+                rationale: "O Art. 18 prevê que a determinação será feita ao responsável 'ou a quem lhe haja sucedido'."
+            },
+            {
+                question: "A baixa na responsabilidade do administrador, no caso de contas iliquidáveis, ocorre imediatamente após a decisão de trancamento.",
+                answer: "Errado",
+                rationale: "A baixa na responsabilidade só ocorre após transcorrer o prazo de cinco anos sem nova decisão, conforme o § 2° do Art. 21."
+            },
+            {
+                question: "A ocorrência de dano ao Erário decorrente de ato ilegítimo, sem a configuração de débito, sujeita o responsável à multa do inciso I do art. 58.",
+                answer: "Certo",
+                rationale: "O parágrafo único do Art. 19 remete à alínea 'c' do inciso III do art. 16, que trata de dano ao Erário, como uma das hipóteses que ensejam a aplicação da referida multa."
+            },
+            {
+                question: "O julgamento de mérito a que se refere o art. 20 é aquele que decide se as contas são regulares, regulares com ressalva, ou irregulares.",
+                answer: "Certo",
+                rationale: "O Art. 20 menciona 'o julgamento de mérito a que se refere o art. 16'. O Art. 16 é justamente o que define os critérios para julgar as contas como regulares, regulares com ressalva, ou irregulares."
+            },
+            {
+                question: "A quitação dada pelo Tribunal no caso de contas regulares com ressalva é condicionada ao cumprimento posterior da determinação expedida.",
+                answer: "Errado",
+                rationale: "A lei não estabelece essa condição. O Art. 18 afirma que o Tribunal 'dará quitação ao responsável e lhe determinará (...) a adoção de medidas'. A quitação é dada no ato do julgamento. O descumprimento da determinação poderá ser sancionado em processo futuro."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
