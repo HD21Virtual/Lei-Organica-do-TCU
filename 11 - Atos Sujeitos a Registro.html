@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiscalização a Cargo do Tribunal</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânicad do TCU</h1>
+            <p>Atos Sujeitos a Registro</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "Compete ao Tribunal de Contas da União julgar, para fins de registro, os atos de admissão de pessoal na administração pública federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 39 estabelece que o Tribunal apreciará os atos, e não os julgará. A troca de verbos é uma 'pegadinha' comum, pois a apreciação para fins de registro é um ato de controle de legalidade, distinto do julgamento de contas."
+            },
+            {
+                question: "A apreciação do TCU para fins de registro abrange todos os atos de admissão de pessoal, inclusive as nomeações para cargo de provimento em comissão.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao incluir os cargos em comissão. O inciso I do Art. 39 é explícito ao excetuar as 'nomeações para cargo de provimento em comissão' da obrigatoriedade de apreciação para registro."
+            },
+            {
+                question: "A competência de apreciação de admissão de pessoal pelo TCU se estende às fundações instituídas e mantidas pelo poder público.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso I do Art. 39 inclui expressamente em seu escopo as 'fundações instituídas e mantidas pelo poder público'."
+            },
+            {
+                question: "A apreciação do TCU abrange as concessões iniciais de reformas e pensões.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo exatamente ao disposto no inciso II do Art. 39, que menciona 'concessão inicial de aposentadoria, reformas e pensões'."
+            },
+            {
+                question: "Qualquer melhoria posterior em um ato de aposentadoria, como um reajuste geral de vencimentos, deve ser submetida à apreciação do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 39 restringe a apreciação apenas às 'melhorias posteriores que tenham alterado o fundamento legal do respectivo concessório inicial'. Um reajuste geral, que não altera a base legal da concessão, não se enquadra nessa hipótese."
+            },
+            {
+                question: "A apreciação dos atos de pessoal pelo TCU é realizada para fins de registro ou de reexame.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do caput do Art. 39, que define a dupla finalidade da apreciação: 'para fins de registro ou reexame'."
+            },
+            {
+                question: "A competência do TCU para apreciar atos de admissão de pessoal se aplica apenas à administração direta.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 39 abrange a 'administração direta e indireta', incluindo as fundações públicas."
+            },
+            {
+                question: "O procedimento para a apreciação dos atos de pessoal pelo TCU é detalhado na Constituição Federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Embora a competência tenha base constitucional, o parágrafo único do Art. 39 determina que os atos serão apreciados 'na forma estabelecida no Regimento Interno'."
+            },
+            {
+                question: "Os atos de admissão de pessoal, a qualquer título, estão sujeitos à apreciação do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, mas deve ser interpretada em conjunto com a exceção. O inciso I do Art. 39 usa a expressão 'a qualquer título' para dar amplitude à regra, que só é excepcionada pelos cargos em comissão. A frase em si é literal e, portanto, correta."
+            },
+            {
+                question: "A apreciação da concessão inicial de aposentadorias pelo TCU exclui a análise de reformas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 39 menciona explicitamente 'aposentadoria, reformas e pensões'."
+            },
+            {
+                question: "Melhorias posteriores em pensões que não alterem o fundamento legal do ato inicial estão dispensadas da apreciação do TCU para fins de novo registro.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Por exclusão, o inciso II do Art. 39 determina a apreciação apenas das melhorias que alteram o fundamento legal, dispensando, portanto, as que não o alteram."
+            },
+            {
+                question: "As nomeações para cargos de provimento em comissão na administração indireta estão sujeitas à apreciação do TCU para fins de registro.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A exceção prevista no inciso I do Art. 39 para os cargos em comissão aplica-se tanto à administração direta quanto à indireta, pois o texto não faz distinção."
+            },
+            {
+                question: "A competência de apreciação do TCU, descrita no Art. 39, fundamenta-se exclusivamente na Lei Orgânica do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 39 inicia fazendo uma longa remissão a diversos artigos da Constituição Federal, deixando claro que a competência tem sua origem na Carta Magna."
+            },
+            {
+                question: "O reexame de um ato de aposentadoria já registrado é uma das finalidades da apreciação de atos de pessoal pelo TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 39 menciona que a apreciação ocorre para fins de 'registro ou reexame'."
+            },
+            {
+                question: "A apreciação de melhorias posteriores em aposentadorias se restringe àquelas que alterem a base legal do benefício.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e reflete com precisão a condição estabelecida na parte final do inciso II do Art. 39."
+            },
+            {
+                question: "No saneamento dos processos de atos de pessoal, o Relator somente pode determinar providências mediante provocação do órgão de instrução ou do Ministério Público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 40 estabelece que o Relator pode atuar 'por sua ação própria e direta, ou por provocação', conferindo-lhe também o poder de agir de ofício."
+            },
+            {
+                question: "A instrução do processo de apreciação de ato de pessoal é presidida pelo próprio Relator.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade da primeira parte do Art. 40: 'O Relator presidirá a instrução do processo'."
+            },
+            {
+                question: "Após a instrução do processo, o Relator decide o mérito do ato de pessoal por meio de despacho singular.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A parte final do Art. 40 determina que, após a instrução, o Relator submeterá o feito ao Plenário ou à Câmara respectiva para decisão de mérito. Ele preside a instrução, mas a decisão de mérito é do colegiado."
+            },
+            {
+                question: "A decisão de mérito sobre um ato de pessoal pode ser proferida tanto pelo Plenário quanto por uma das Câmaras do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A parte final do Art. 40 prevê que o feito será submetido 'ao Plenário ou à Câmara respectiva'."
+            },
+            {
+                question: "O órgão de instrução técnica do Tribunal pode determinar, por conta própria, a adoção de providências para o saneamento dos autos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 40 indica que o órgão de instrução pode provocar o Relator para que este determine as providências. A determinação em si é um ato do Relator."
+            },
+            {
+                question: "O prazo para o atendimento de diligências em processos de atos de pessoal é fixado na própria Lei Orgânica do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 40 estabelece que o Relator fixará o prazo 'na forma estabelecida no Regimento Interno'."
+            },
+            {
+                question: "A atuação do Relator na instrução do processo se dá por meio de despacho singular.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, conforme a redação do Art. 40: 'determinando, mediante despacho singular'."
+            },
+            {
+                question: "O Ministério Público junto ao Tribunal pode provocar o Relator para que este determine providências necessárias ao saneamento dos autos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 40 menciona expressamente a 'provocação (...) do Ministério Público junto ao Tribunal' como um dos gatilhos para a atuação do Relator."
+            },
+            {
+                question: "O saneamento dos autos é a fase processual que antecede a submissão do feito ao colegiado para decisão de mérito.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve a ordem lógica do processo estabelecida no Art. 40: o Relator determina providências para o saneamento e, 'após o que', submete o feito ao colegiado."
+            },
+            {
+                question: "A instrução do processo de apreciação de ato de pessoal é de responsabilidade do Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A presidência da instrução, conforme o Art. 40, é do Relator do processo."
+            },
+            {
+                question: "O Relator pode determinar, por sua ação própria e direta, o saneamento do processo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 40 confere ao Relator o poder de agir 'por sua ação própria e direta', o que significa agir de ofício."
+            },
+            {
+                question: "A decisão de mérito em um processo de ato de pessoal é de competência exclusiva do Plenário do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 40 prevê que a decisão pode ser do 'Plenário ou da Câmara respectiva', indicando que as Câmaras também possuem essa competência."
+            },
+            {
+                question: "A fixação de prazo para atendimento de diligências é um ato discricionário do Relator, não vinculado a nenhuma norma.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 40 vincula a atuação do Relator, determinando que a fixação do prazo se dará 'na forma estabelecida no Regimento Interno'."
+            },
+            {
+                question: "O saneamento dos autos consiste na adoção de providências consideradas necessárias para deixar o processo em ordem para o julgamento.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois traduz o sentido técnico-jurídico da expressão 'saneamento dos autos' utilizada no Art. 40."
+            },
+            {
+                question: "A submissão do processo ao colegiado para decisão de mérito é a etapa final da atuação do Relator na fase de instrução.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve a última ação do Relator no fluxo processual estabelecido pelo Art. 40."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
