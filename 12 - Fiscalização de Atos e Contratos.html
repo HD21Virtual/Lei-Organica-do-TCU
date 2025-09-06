@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiscalização a Cargo do Tribunal</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Fiscalização de Atos e Contratos</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 90</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A fiscalização de atos que resultem em receita ou despesa tem como única finalidade instruir o julgamento das contas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 41 estabelece uma finalidade dupla para a fiscalização: 'para assegurar a eficácia do controle e para instruir o julgamento das contas'."
+            },
+            {
+                question: "As competências de fiscalização listadas nos incisos do Art. 41 são exaustivas, não podendo o Tribunal exercer outras atividades de controle.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 41 afirma que compete ao Tribunal exercer as atribuições listadas, 'para tanto, em especial', indicando que o rol de competências é exemplificativo, e não exaustivo."
+            },
+            {
+                question: "O Tribunal de Contas da União pode acompanhar a abertura de créditos adicionais por meio da publicação no Diário Oficial da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde exatamente ao disposto no Art. 41, inciso I, alínea 'a'."
+            },
+            {
+                question: "O acompanhamento de editais de licitação pelo TCU deve ser feito, obrigatoriamente, pela publicação no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 41 estabelece que o acompanhamento pode ser feito 'pela publicação no Diário Oficial da União, ou por outro meio estabelecido no Regimento Interno', prevendo uma alternativa."
+            },
+            {
+                question: "As inspeções e auditorias realizadas pelo TCU por iniciativa própria são de natureza distinta daquelas solicitadas pelo Congresso Nacional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 41 especifica que as inspeções e auditorias por iniciativa própria são 'de mesma natureza que as previstas no inciso I do art. 38'."
+            },
+            {
+                question: "A fiscalização das contas nacionais de empresas supranacionais de cujo capital a União participe depende de previsão no respectivo tratado constitutivo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso III do Art. 41 condiciona a fiscalização à observância dos 'termos do tratado constitutivo'."
+            },
+            {
+                question: "A competência do TCU para fiscalizar recursos repassados pela União abrange apenas aqueles transferidos a Estados e Municípios, excluindo o Distrito Federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 41 inclui expressamente o repasse 'a Estado, ao Distrito Federal ou a Município'."
+            },
+            {
+                question: "As inspeções e auditorias do Tribunal são realizadas exclusivamente por servidores de sua Secretaria.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, conforme o § 1° do Art. 41, que determina que as inspeções e auditorias serão 'realizadas por servidores da Secretaria do Tribunal'."
+            },
+            {
+                question: "O Tribunal comunicará o resultado de suas inspeções e auditorias às autoridades competentes com o objetivo de punir os responsáveis.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. De acordo com o § 2° do Art. 41, a finalidade da comunicação é viabilizar a adoção de 'medidas saneadoras das impropriedades e faltas identificadas', e não a punição direta."
+            },
+            {
+                question: "O Tribunal pode realizar inspeções e auditorias por iniciativa própria, na forma estabelecida em lei específica.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 41, que prevê a iniciativa própria, determina que o procedimento se dará 'na forma estabelecida no Regimento Interno', e não em lei específica."
+            },
+            {
+                question: "A fiscalização de atos que resultam em receita pública está fora do escopo de atuação do Tribunal previsto no Art. 41.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 41 é explícito ao afirmar que o Tribunal efetuará a fiscalização dos atos de que resulte receita ou despesa."
+            },
+            {
+                question: "Contratos administrativos e convênios são exemplos de instrumentos acompanhados pelo TCU por meio de publicação oficial.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao conteúdo da alínea 'b' do inciso I do Art. 41."
+            },
+            {
+                question: "A fiscalização de empresas supranacionais pelo TCU ocorre apenas nos casos em que a participação da União no capital social é direta.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 41 abrange a participação da União 'de forma direta ou indireta'."
+            },
+            {
+                question: "A fiscalização da aplicação de recursos federais repassados a um município por meio de um ajuste é de competência do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso IV do Art. 41 menciona 'convênio, acordo, ajuste ou outros instrumentos congêneres' como meios de repasse fiscalizáveis."
+            },
+            {
+                question: "A regulamentação das inspeções e auditorias do TCU é feita por meio de instrução normativa.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1° do Art. 41 estabelece que as inspeções e auditorias 'serão regulamentadas no Regimento Interno'."
+            },
+            {
+                question: "A comunicação do resultado de auditorias é dirigida às autoridades competentes dos Poderes da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo exatamente ao destinatário da comunicação, conforme o § 2º do Art. 41."
+            },
+            {
+                question: "O Tribunal acompanhará, pela publicação oficial, a lei de diretrizes orçamentárias e a lei orçamentária anual.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e lista dois dos instrumentos normativos mencionados no Art. 41, inciso I, alínea 'a'."
+            },
+            {
+                question: "A realização de auditorias por iniciativa própria pelo TCU depende de autorização prévia do Congresso Nacional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta e contradiz a própria natureza da competência. O inciso II do Art. 41 estabelece a realização 'por iniciativa própria', o que, por definição, dispensa autorização de outro Poder."
+            },
+            {
+                question: "A fiscalização do TCU alcança quaisquer recursos repassados pela União a outros entes federativos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso IV do Art. 41 utiliza a expressão 'quaisquer recursos', conferindo amplitude à competência de fiscalização."
+            },
+            {
+                question: "Servidores de outros órgãos cedidos ao TCU podem realizar as inspeções e auditorias previstas no Art. 41.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 41 é restritivo, afirmando que as fiscalizações serão realizadas 'por servidores da Secretaria do Tribunal', ou seja, por seu quadro próprio."
+            },
+            {
+                question: "O resultado das inspeções e auditorias do TCU é comunicado às autoridades para que estas instaurem, imediatamente, processos disciplinares.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto à finalidade da comunicação. Conforme o § 2º do Art. 41, o objetivo é a adoção de 'medidas saneadoras', que podem ou não incluir processos disciplinares, mas não se resumem a isso."
+            },
+            {
+                question: "O TCU pode acompanhar os atos referidos no art. 38 por meio de publicação no Diário Oficial da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A parte final da alínea 'b' do inciso I do Art. 41 menciona expressamente 'os atos referidos no art. 38 desta Lei'."
+            },
+            {
+                question: "A fiscalização de empresas supranacionais pelo TCU é realizada na forma estabelecida em lei complementar.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 41 estabelece que a fiscalização ocorrerá 'na forma estabelecida no Regimento Interno'."
+            },
+            {
+                question: "A fiscalização de recursos repassados pela União a um estado mediante convênio é de competência do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve uma situação que se enquadra perfeitamente na competência definida no inciso IV do Art. 41."
+            },
+            {
+                question: "A comunicação dos resultados das fiscalizações do TCU é dirigida apenas às autoridades do Poder Executivo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 41 estabelece que a comunicação será feita 'às autoridades competentes dos poderes da União', abrangendo, portanto, o Legislativo e o Judiciário, além do Executivo."
+            },
+            {
+                question: "A fiscalização dos atos que resultem em receita ou despesa é um dos objetivos da atuação do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do caput do Art. 41, que estabelece que o Tribunal 'efetuará a fiscalização dos atos de que resulte receita ou despesa'."
+            },
+            {
+                question: "A fiscalização da aplicação de recursos repassados ao Distrito Federal é de competência exclusiva do Tribunal de Contas do Distrito Federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Tratando-se de recursos federais, a competência originária de fiscalização é do TCU, conforme o inciso IV do Art. 41, sem prejuízo da atuação do tribunal de contas local."
+            },
+            {
+                question: "A lei do plano plurianual é um dos documentos que o TCU acompanha pela publicação oficial.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A alínea 'a' do inciso I do Art. 41 menciona expressamente a 'lei relativa ao plano plurianual'."
+            },
+            {
+                question: "O TCU só pode realizar auditorias operacionais se provocado pelo Congresso Nacional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 41 permite ao TCU realizar, por iniciativa própria, auditorias 'de mesma natureza que as previstas no inciso I do art. 38', o que inclui a auditoria operacional."
+            },
+            {
+                question: "As medidas saneadoras, a serem tomadas com base nos resultados das auditorias do TCU, são de responsabilidade das próprias autoridades fiscalizadas.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A lógica do § 2º do Art. 41 é que o TCU comunica o resultado 'às autoridades competentes dos poderes da União' para que elas tomem 'as medidas saneadoras'. A responsabilidade pela correção é da própria gestão."
+            },
+            {
+                question: "Informações classificadas como sigilosas por autoridade administrativa podem, sob esse pretexto, ser sonegadas ao Tribunal de Contas da União em suas inspeções.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 42 é taxativo ao afirmar que 'nenhum processo, documento ou informação poderá ser sonegado ao Tribunal (...) sob qualquer pretexto', conferindo ao TCU amplo poder de acesso."
+            },
+            {
+                question: "Em caso de sonegação de documentos, o Tribunal aplicará imediatamente a sanção prevista em lei.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O procedimento previsto no § 1º do Art. 42 estabelece que, primeiramente, o Tribunal 'assinará prazo para apresentação dos documentos' e comunicará o fato à autoridade superior. A sanção (conforme § 2º) só é aplicada se, vencido o prazo, a exigência não for cumprida."
+            },
+            {
+                question: "Se a fiscalização do TCU constatar apenas uma falta de caráter formal em um ato, o Relator determinará a audiência do responsável para apresentar justificativas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao confundir as hipóteses dos incisos I e II do Art. 43. No caso de falta ou impropriedade de caráter formal (inciso I), o Tribunal determinará as providências do Regimento Interno. A audiência (inciso II) é para irregularidade quanto à legitimidade ou economicidade."
+            },
+            {
+                question: "A verificação de irregularidade quanto à legitimidade ou economicidade em uma fiscalização ensejará a audiência do responsável.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde exatamente ao procedimento descrito no inciso II do Art. 43."
+            },
+            {
+                question: "Se as razões de justificativa apresentadas pelo responsável em audiência não forem suficientes para afastar a irregularidade, o Tribunal o condenará em débito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 43 estabelece que, se o fundamento da impugnação não for elidido (afastado), o Tribunal aplicará ao responsável a multa prevista no inciso III do art. 58, não mencionando a condenação em débito neste dispositivo específico."
+            },
+            {
+                question: "O afastamento cautelar do responsável só pode ser determinado pelo Tribunal a requerimento do Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 44 é claro ao permitir que o Tribunal determine a medida 'de ofício ou a requerimento do Ministério Público'."
+            },
+            {
+                question: "A indisponibilidade de bens do responsável pode ser decretada pelo Tribunal por um prazo máximo de um ano.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo ao prazo máximo para a medida cautelar, conforme previsto no § 2º do Art. 44 ('por prazo não superior a um ano')."
+            },
+            {
+                question: "A autoridade superior que descumprir a determinação do TCU para afastar um responsável responderá subsidiariamente pelo dano.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 44 estabelece que a autoridade superior competente responderá solidariamente, e não subsidiariamente."
+            },
+            {
+                question: "No caso de sonegação de documentos, o Tribunal deve comunicar o fato ao Ministro de Estado supervisor da área para as medidas cabíveis.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das providências que o Tribunal deve tomar, conforme o § 1º do Art. 42."
+            },
+            {
+                question: "A audiência do responsável para apresentar razões de justificativa ocorre quando há irregularidade de legalidade ou economicidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 43 especifica que a audiência se dará em caso de irregularidade quanto à legitimidade ou economicidade, e não legalidade. A troca de termos é uma 'pegadinha' comum."
+            },
+            {
+                question: "A existência de indícios de que o responsável, no exercício de suas funções, possa causar novos danos ao Erário é um dos fundamentos para seu afastamento temporário.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve uma das três hipóteses que justificam a medida cautelar de afastamento, conforme a parte final do caput do Art. 44."
+            },
+            {
+                question: "O afastamento temporário do responsável só pode ser determinado no curso da apuração, após a fase inicial de instrução.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 44 permite a determinação da medida 'no início ou no curso de qualquer apuração'."
+            },
+            {
+                question: "A decretação de indisponibilidade de bens pelo Tribunal impede a aplicação de outras sanções, como as previstas nos artigos 60 e 61.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 44 afirma que a indisponibilidade de bens poderá ser decretada 'sem prejuízo das medidas previstas nos arts. 60 e 61', indicando que as medidas são cumulativas."
+            },
+            {
+                question: "Se, em uma fiscalização, não for apurada qualquer transgressão a norma legal ou regulamentar, o Tribunal determinará as providências estabelecidas no Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à situação e à providência descritas no inciso I do Art. 43."
+            },
+            {
+                question: "Vencido o prazo concedido para apresentação de documentos sonegados, e não cumprida a exigência, o Tribunal aplicará a sanção prevista no inciso IV do art. 58.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, descrevendo fielmente a consequência da inércia do responsável, conforme o § 2º do Art. 42."
+            },
+            {
+                question: "A multa aplicada ao responsável cujas justificativas não foram aceitas é aquela prevista no inciso IV do art. 58.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 43 especifica que a multa a ser aplicada nesse caso é a 'prevista no inciso III do art. 58'. A troca de incisos da sanção é uma 'pegadinha' comum."
+            },
+            {
+                question: "O Tribunal decretará a indisponibilidade de todos os bens do responsável para garantir o ressarcimento do dano.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 44 estabelece um limite, determinando a indisponibilidade de 'tantos quantos considerados bastantes para garantir o ressarcimento', e não de todos os bens."
+            },
+            {
+                question: "O afastamento cautelar do responsável é uma medida que o Tribunal determinará obrigatoriamente sempre que houver indícios de irregularidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O afastamento não é por qualquer indício, mas sim se houver indícios de que o responsável possa atrapalhar a apuração, causar novos danos ou inviabilizar o ressarcimento, conforme o caput do Art. 44."
+            },
+            {
+                question: "A autoridade superior competente que não cumpre a determinação de afastamento do responsável no prazo estipulado pelo TCU será solidariamente responsável.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde exatamente à consequência prevista no § 1º do Art. 44."
+            },
+            {
+                question: "O prazo para o responsável apresentar razões de justificativa em audiência é fixado na própria lei.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 43 estabelece que o prazo será 'estabelecido no Regimento Interno'."
+            },
+            {
+                question: "A indisponibilidade de bens pode ser decretada pelo Tribunal tanto de ofício quanto por requerimento do Ministério Público.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 2º do Art. 44 estabelece que a medida pode ser tomada 'nas mesmas circunstâncias do caput', e o caput prevê a atuação 'de ofício ou a requerimento do Ministério Público'."
+            },
+            {
+                question: "Se, numa fiscalização, for apurada irregularidade de natureza contábil, o responsável será chamado em audiência.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A audiência prevista no inciso II do Art. 43 é para irregularidades de legitimidade ou economicidade. A irregularidade contábil (inciso I) levaria a outras providências do Regimento Interno."
+            },
+            {
+                question: "A comunicação do fato ao Ministro de Estado supervisor da área é uma medida tomada pelo TCU após a aplicação da sanção por sonegação de documentos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A comunicação à autoridade superior, conforme o § 1º do Art. 42, é uma medida que acompanha a fixação do prazo para apresentação dos documentos, ocorrendo antes da eventual aplicação da sanção."
+            },
+            {
+                question: "O afastamento temporário do responsável pode ser determinado se houver indícios de que ele possa retardar ou dificultar a realização de uma inspeção.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das justificativas para a medida cautelar, listada no caput do Art. 44."
+            },
+            {
+                question: "A indisponibilidade de bens é uma medida discricionária do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O uso da forma verbal 'poderá o Tribunal (...) decretar' no § 2º do Art. 44 indica que a medida é uma faculdade, e não uma obrigação, a ser exercida conforme o juízo de conveniência e oportunidade da Corte."
+            },
+            {
+                question: "Se o fundamento da impugnação for elidido pelo responsável, o Tribunal determinará as providências do Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Se as justificativas são aceitas ('elidido o fundamento'), a irregularidade é afastada. Nessa situação, o caso se assemelha ao do inciso I do Art. 43, cabendo as providências de caráter geral do Regimento Interno, como o arquivamento."
+            },
+            {
+                question: "A responsabilidade solidária da autoridade superior que não afasta o subordinado independe de prazo fixado pelo Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 44 condiciona a responsabilização ao descumprimento da determinação 'no prazo determinado pelo Tribunal'."
+            },
+            {
+                question: "A decretação de indisponibilidade de bens pode ocorrer por até um ano e meio.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O prazo máximo fixado no § 2º do Art. 44 é de 'não superior a um ano'."
+            },
+            {
+                question: "A sonegação de informações em uma auditoria do TCU é permitida sob o pretexto de segredo de justiça.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 42 é categórico ao proibir a sonegação 'sob qualquer pretexto', não admitindo exceções."
+            },
+            {
+                question: "O afastamento temporário do responsável e a indisponibilidade de seus bens são as únicas medidas cautelares que o Tribunal pode adotar durante uma apuração.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 44, em seu § 2º, ao tratar da indisponibilidade, afirma que esta pode ser decretada 'sem prejuízo das medidas previstas nos arts. 60 e 61', indicando que outras medidas sancionatórias ou acautelatórias podem coexistir. Além disso, a lista de medidas cautelares do Regimento Interno do TCU é mais ampla."
+            },
+            {
+                question: "Ao verificar a ilegalidade de um contrato administrativo, caso o responsável não adote as providências determinadas, o Tribunal de Contas da União poderá, de imediato, sustar a execução do contrato.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta, pois confunde o procedimento aplicável a contratos com o de atos administrativos. Conforme o § 2º do Art. 45, no caso de contrato, o TCU primeiramente comunicará o fato ao Congresso Nacional, a quem compete o ato de sustação. A competência do TCU para sustar o contrato é subsidiária, ocorrendo apenas se o Congresso ou o Executivo não agirem em 90 dias (§ 3º)."
+            },
+            {
+                question: "Verificada a ocorrência de fraude comprovada à licitação, o TCU declarará a inidoneidade do licitante para participar de licitações na Administração Pública Federal pelo prazo fixo de cinco anos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 46 estabelece que o prazo da sanção é de até cinco anos, e não um prazo fixo. Isso significa que o Tribunal pode dosar a sanção, aplicando um período menor, a depender da gravidade do caso."
+            },
+            {
+                question: "Se, durante uma fiscalização, for configurado desfalque, o Tribunal poderá, a seu critério, converter o processo em tomada de contas especial.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 47 utiliza o verbo 'ordenará', indicando que a conversão do processo em tomada de contas especial é um ato vinculado e obrigatório, não uma faculdade (poderá) do Tribunal."
+            },
+            {
+                question: "O processo de tomada de contas especial, originado de uma fiscalização, tramitará apensado às respectivas contas anuais do gestor para julgamento em conjunto.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 47 determina que a tomada de contas especial tramitará em separado das respectivas contas anuais."
+            },
+            {
+                question: "No caso de um ato administrativo ilegal, se o responsável não atender à determinação do TCU, o próprio Tribunal sustará a execução do ato e comunicará a decisão à Câmara dos Deputados e ao Senado Federal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve precisamente as providências que o TCU deve tomar em caso de descumprimento de sua determinação referente a um ato administrativo, conforme os incisos I e II do § 1º do Art. 45."
+            },
+            {
+                question: "A declaração de inidoneidade do licitante fraudador o impede de participar de licitações em qualquer esfera da Administração Pública, seja federal, estadual ou municipal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 46 restringe o alcance da sanção, determinando que a inidoneidade é para participar de licitação na Administração Pública Federal."
+            },
+            {
+                question: "A conversão do processo de fiscalização em tomada de contas especial ocorrerá ao final da apuração, após esgotadas todas as diligências.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 47 determina que o Tribunal ordenará desde logo a conversão, indicando que a medida deve ser tomada de imediato, assim que configurado o dano, para garantir a celeridade na apuração e no ressarcimento."
+            },
+            {
+                question: "Ao determinar que o responsável adote providências para o cumprimento da lei, o TCU deve indicar expressamente os dispositivos legais a serem observados.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à exigência contida na parte final do caput do Art. 45."
+            },
+            {
+                question: "Se o Congresso Nacional não efetivar as medidas para sustar um contrato ilegal no prazo de noventa dias, o Tribunal decidirá a respeito da sustação.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, descrevendo a competência subsidiária do TCU para sustar contratos, conforme previsto no § 3º do Art. 45."
+            },
+            {
+                question: "A mera suspeita de fraude em licitação é suficiente para que o TCU declare a inidoneidade do licitante.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 46 exige 'fraude comprovada', o que pressupõe a existência de provas robustas e o respeito ao contraditório e à ampla defesa, não bastando a mera suspeita."
+            },
+            {
+                question: "A conversão do processo em tomada de contas especial é obrigatória em todos os casos em que se configure dano ao Erário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 47 estabelece uma exceção à regra geral da conversão, ao ressalvar 'a hipótese prevista no art. 93 desta Lei', indicando que a obrigatoriedade não é absoluta."
+            },
+            {
+                question: "No caso de ato administrativo ilegal, a multa aplicada ao responsável omisso é uma das providências a serem tomadas pelo TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso III do § 1º do Art. 45 prevê que, se não atendido, o Tribunal aplicará ao responsável a multa prevista no inciso II do art. 58."
+            },
+            {
+                question: "A competência para sustar um contrato irregular é, primariamente, do Poder Executivo, a quem o TCU deve solicitar as medidas cabíveis.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o § 2º do Art. 45, a competência primária para adotar o ato de sustação é do Congresso Nacional, que, por sua vez, solicitará as medidas cabíveis ao Poder Executivo."
+            },
+            {
+                question: "A sanção de inidoneidade para licitar, aplicada pelo TCU, tem duração máxima de três anos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O prazo máximo previsto no Art. 46 é de cinco anos."
+            },
+            {
+                question: "Desvio de bens é uma das irregularidades que, resultando em dano ao Erário, enseja a conversão do processo em tomada de contas especial.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das hipóteses literais mencionadas no caput do Art. 47."
+            },
+            {
+                question: "Se o Poder Executivo, no prazo de noventa dias, não tomar as medidas cabíveis para sustar um contrato, o Tribunal deverá comunicar novamente o fato ao Congresso Nacional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 45 estabelece que, se o Congresso ou o Executivo não agirem em noventa dias, o próprio Tribunal decidirá a respeito da sustação, assumindo a responsabilidade de forma subsidiária."
+            },
+            {
+                question: "A declaração de inidoneidade prevista no Art. 46 se aplica ao licitante vencedor, mas não aos demais participantes que tenham concorrido para a fraude.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 46 refere-se ao 'licitante fraudador', termo que abrange qualquer participante da licitação que tenha comprovadamente praticado a fraude, e não apenas o vencedor."
+            },
+            {
+                question: "A tomada de contas especial tramitará de forma autônoma em relação às contas anuais.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois reflete o sentido do parágrafo único do Art. 47, que determina a tramitação 'em separado' das contas anuais."
+            },
+            {
+                question: "A comunicação que o TCU faz ao Congresso Nacional sobre a ilegalidade de um contrato tem como objetivo solicitar, de imediato, ao Poder Executivo as medidas cabíveis.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao inverter os sujeitos da ação. Conforme o § 2º do Art. 45, é o Congresso Nacional (e não o TCU) quem, após receber a comunicação, solicitará as medidas ao Poder Executivo."
+            },
+            {
+                question: "O prazo de noventa dias para o Congresso Nacional agir na sustação de um contrato é contado a partir da assinatura do referido contrato.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O prazo de noventa dias mencionado no § 3º do Art. 45 é para o Congresso ou o Executivo agirem após a comunicação do fato pelo TCU, e não da data de assinatura do contrato."
+            },
+            {
+                question: "A sanção de inidoneidade aplicada pelo TCU é um ato de natureza jurisdicional.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A declaração de inidoneidade é uma sanção com caráter punitivo e restritivo de direitos, exercida pelo TCU no âmbito de sua competência de controle externo, que possui natureza administrativa similar à jurisdicional."
+            },
+            {
+                question: "A conversão em tomada de contas especial é cabível em qualquer irregularidade de que resulte dano ao Erário.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 47 usa a expressão ampla 'desfalque, desvio de bens ou outra irregularidade de que resulte dano ao Erário', abrangendo diversas situações."
+            },
+            {
+                question: "Ao verificar a ilegalidade de um ato administrativo, o TCU deve, em primeiro lugar, sustá-lo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A sustação do ato é uma medida tomada apenas se não atendida a determinação inicial para que o próprio responsável adote as providências de correção, conforme o fluxo do caput e § 1º do Art. 45."
+            },
+            {
+                question: "Se o TCU sustar um ato administrativo por ilegalidade, a comunicação da decisão será feita apenas ao Senado Federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do § 1º do Art. 45 determina que a comunicação da decisão será feita 'à Câmara dos Deputados e ao Senado Federal'."
+            },
+            {
+                question: "A competência do TCU para declarar a inidoneidade de um licitante fraudador independe de provocação.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 46 estabelece que 'verificada a ocorrência...', o Tribunal declarará. A verificação pode ocorrer no curso de qualquer fiscalização, tratando-se de um poder-dever do Tribunal, sem necessidade de provocação externa."
+            },
+            {
+                question: "A conversão do processo em tomada de contas especial é uma medida a ser ordenada 'desde logo', indicando o caráter urgente da providência.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O uso da expressão 'desde logo' no Art. 47 enfatiza a necessidade de uma ação imediata por parte do Tribunal para apurar e quantificar o dano, visando ao ressarcimento."
+            },
+            {
+                question: "A comunicação ao Congresso sobre um contrato ilegal é feita pelo TCU mesmo antes de assinar prazo para o responsável se corrigir.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A comunicação ao Congresso, conforme o § 2º do Art. 45, é uma medida tomada 'se não atendido', ou seja, após o descumprimento do prazo para correção fixado no caput."
+            },
+            {
+                question: "A sustação de um ato administrativo pelo TCU é uma competência exercida de forma originária e direta pelo Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, em contraposição ao que ocorre com os contratos. No caso de ato administrativo, se a determinação não for cumprida, o inciso I do § 1º do Art. 45 confere ao próprio Tribunal o poder de sustar o ato."
+            },
+            {
+                question: "A declaração de inidoneidade do licitante fraudador tem como efeito impedi-lo de celebrar novos contratos com a Administração Pública Federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao generalizar o efeito. O Art. 46 é específico: a sanção o impede de 'participar (...) de licitação'. Embora isso, na prática, o impeça de celebrar novos contratos via licitação, a redação legal é mais restrita e não abrange, por exemplo, contratações diretas em que ele não seja considerado 'licitante'."
+            },
+            {
+                question: "O parágrafo único do Art. 47 visa garantir que a apuração específica do dano na tomada de contas especial não seja prejudicada pela complexidade e pelo rito próprio do processo de contas anuais.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Ao determinar que a TCE tramitará 'em separado', a norma busca dar celeridade e foco à apuração do dano e à identificação dos responsáveis, sem que seja necessário aguardar o processamento, muitas vezes mais demorado, das contas anuais."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
