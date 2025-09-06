@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiscalização a Cargo do Tribunal</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Controle Interno</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 60</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O sistema de controle interno, com a finalidade de apoiar o controle externo, é mantido de forma integrada apenas pelos Poderes Executivo e Judiciário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 49 estabelece que o sistema de controle interno é mantido pelos Poderes Legislativo, Executivo e Judiciário."
+            },
+            {
+                question: "Uma das finalidades do sistema de controle interno é comprovar a legalidade e avaliar os resultados quanto à eficácia e eficiência da aplicação de recursos públicos por entidades de direito privado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo exatamente à parte final do inciso II do Art. 49, que estende a atuação do controle interno a essas entidades."
+            },
+            {
+                question: "Compete aos órgãos de controle interno instaurar a tomada de contas especial sempre que tiverem conhecimento de irregularidades que resultem em dano ao Erário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o inciso III do Art. 50, o controle interno deve alertar formalmente a autoridade administrativa competente para que esta instaure a tomada de contas especial. O controle interno não instaura o procedimento diretamente; ele provoca a autoridade competente a fazê-lo."
+            },
+            {
+                question: "Os responsáveis pelo controle interno, ao tomarem conhecimento de qualquer irregularidade, devem dar ciência do fato ao Tribunal de Contas da União, sob pena de responsabilidade subsidiária.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto à natureza da responsabilidade. O caput do Art. 51 estabelece que a omissão acarreta pena de responsabilidade solidária, e não subsidiária."
+            },
+            {
+                question: "O pronunciamento do Ministro de Estado supervisor da área sobre as contas é um ato delegável a outra autoridade de sua pasta.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 52 classifica expressamente o pronunciamento como indelegável."
+            },
+            {
+                question: "O sistema de controle interno deve avaliar o cumprimento das metas previstas no plano plurianual e a execução dos orçamentos da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde exatamente às finalidades descritas no inciso I do Art. 49."
+            },
+            {
+                question: "Ao realizar auditorias nas contas dos responsáveis, o controle interno deve emitir relatório, certificado de auditoria e parecer.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve os três documentos que devem ser emitidos pelo controle interno ao realizar auditorias, conforme o inciso II do Art. 50."
+            },
+            {
+                question: "A comunicação de uma irregularidade ao TCU, feita pelo dirigente do controle interno, deve indicar as providências adotadas para evitar ocorrências semelhantes.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois reflete a exigência contida no § 1º do Art. 51."
+            },
+            {
+                question: "No seu pronunciamento, o Ministro de Estado supervisor deve julgar o mérito das conclusões contidas no parecer do controle interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A finalidade do pronunciamento, conforme o Art. 52, é atestar haver tomado conhecimento das conclusões, e não proferir um julgamento de mérito sobre elas."
+            },
+            {
+                question: "O sistema de controle interno deve ser mantido pelos três Poderes de forma independente, sem integração entre eles.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 49 determina que os Poderes manterão o sistema 'de forma integrada'."
+            },
+            {
+                question: "A comunicação de irregularidade ao TCU, por parte do controle interno, deve ser feita ao final de cada exercício financeiro.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 51 estabelece que a ciência ao TCU deve ser dada de imediato."
+            },
+            {
+                question: "Se o TCU, em uma auditoria, verificar uma ilegalidade não comunicada pelo controle interno, o dirigente deste órgão será automaticamente sancionado.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 51 estabelece uma condição para a sanção: é necessário que a omissão seja provada ('e provada a omissão'). A sanção não é automática."
+            },
+            {
+                question: "O pronunciamento do Ministro de Estado supervisor da área incide tanto sobre as contas quanto sobre o parecer do controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo à literalidade do Art. 52, que menciona 'sobre as contas e o parecer do controle interno'."
+            },
+            {
+                question: "Exercer o controle dos direitos e haveres da União é uma das finalidades do sistema de controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde à parte final do inciso III do Art. 49."
+            },
+            {
+                question: "A lista de atividades de apoio ao controle externo, descrita no Art. 50, é exaustiva.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 50 afirma que os órgãos de controle interno deverão exercer, 'dentre outras', as atividades listadas, indicando que o rol é exemplificativo."
+            },
+            {
+                question: "A responsabilidade solidária do responsável pelo controle interno só se configura se a irregularidade não comunicada for descoberta pelo TCU em julgamento de contas, não se aplicando se for descoberta em inspeção.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 51 abrange a verificação da irregularidade 'em inspeção ou auditoria, ou no julgamento de contas', não fazendo essa distinção."
+            },
+            {
+                question: "A autoridade de nível hierárquico equivalente a Ministro de Estado também tem o dever de emitir o pronunciamento previsto no Art. 52.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois o Art. 52 menciona 'O Ministro de Estado supervisor da área ou a autoridade de nível hierárquico equivalente'."
+            },
+            {
+                question: "O controle da gestão patrimonial nos órgãos da administração federal é uma das finalidades do sistema de controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das áreas de gestão (orçamentária, financeira e patrimonial) mencionadas no inciso II do Art. 49."
+            },
+            {
+                question: "O alerta para instauração de tomada de contas especial, a ser feito pelo controle interno, deve ser dirigido diretamente ao TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o inciso III do Art. 50, o alerta deve ser feito 'à autoridade administrativa competente', e não ao TCU."
+            },
+            {
+                question: "O dirigente do órgão de controle interno, ao ser responsabilizado solidariamente por omissão, ficará sujeito às mesmas sanções previstas para o gestor original.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 2º do Art. 51 afirma que o dirigente 'ficará sujeito às sanções previstas para a espécie nesta Lei', ou seja, as mesmas aplicáveis ao gestor que cometeu a irregularidade original."
+            },
+            {
+                question: "O pronunciamento do Ministro de Estado é considerado expresso e indelegável.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde às características do pronunciamento, conforme a redação do Art. 52."
+            },
+            {
+                question: "O controle interno não tem como finalidade apoiar o controle externo, pois suas atribuições são restritas à própria gestão.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 49 estabelece como uma das finalidades explícitas do controle interno 'apoiar o controle externo no exercício de sua missão institucional'."
+            },
+            {
+                question: "O alerta do controle interno para instauração de tomada de contas especial deve ser feito de maneira informal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 50 exige que o controle interno deve 'alertar formalmente' a autoridade competente."
+            },
+            {
+                question: "O conhecimento de uma ilegalidade por parte dos responsáveis pelo controle interno gera o dever imediato de comunicação ao TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à obrigação estabelecida no caput do Art. 51, que exige ciência 'de imediato'."
+            },
+            {
+                question: "O pronunciamento ministerial é um ato de conhecimento, não de concordância com as conclusões do parecer do controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 52 define que o Ministro atestará 'haver tomado conhecimento das conclusões', sem exigir que ele concorde ou discorde delas."
+            },
+            {
+                question: "O controle das operações de crédito, avais e garantias da União é uma função do controle externo, não do controle interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 49 lista 'exercer o controle das operações de crédito, avais e garantias' como uma das finalidades do sistema de controle interno."
+            },
+            {
+                question: "O alerta para instauração de tomada de contas especial pelo controle interno é provocado por qualquer irregularidade, mesmo que não resulte em dano.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 50 remete ao caput do Art. 8º, que trata de hipóteses que, em sua maioria, envolvem dano ao erário ou omissão no dever de prestar contas de recursos, não se aplicando a qualquer irregularidade."
+            },
+            {
+                question: "A responsabilidade solidária do dirigente do controle interno, por omissão, independe de prova, bastando que o TCU encontre uma irregularidade não comunicada.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 51 é claro ao condicionar a responsabilização à comprovação da falta do dirigente: 'e provada a omissão'."
+            },
+            {
+                question: "O pronunciamento ministerial é a última etapa do processo de contas no âmbito do Poder Executivo, antes do envio ao TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve a função do ato dentro do fluxo processual. O parecer do controle interno é elaborado, e sobre ele incide o pronunciamento do Ministro, que atesta o conhecimento, fechando a análise na esfera ministerial antes da remessa ao controle externo."
+            },
+            {
+                question: "Avaliar a eficiência da gestão orçamentária nos órgãos federais é uma das finalidades do controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das finalidades listadas no inciso II do Art. 49."
+            },
+            {
+                question: "O sistema de controle interno é mantido de forma integrada pelos três Poderes com o objetivo principal de substituir o controle externo no exercício de sua missão institucional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 49 estabelece que a finalidade é **apoiar** o controle externo, e não substituí-lo."
+            },
+            {
+                question: "A avaliação da execução dos programas de governo é uma das finalidades do sistema de controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das finalidades listadas no inciso I do Art. 49."
+            },
+            {
+                question: "O controle exercido pelo sistema de controle interno sobre a gestão orçamentária, financeira e patrimonial limita-se à comprovação da legalidade, não abrangendo a avaliação de resultados.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 49 é explícito ao determinar que o controle interno deve 'comprovar a legalidade **e avaliar os resultados quanto à eficácia e à eficiência**'."
+            },
+            {
+                question: "O alerta para a instauração de tomada de contas especial, a ser feito pelo controle interno, é uma das atividades exercidas em apoio ao controle externo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 50 contextualiza as atividades listadas, incluindo a do inciso III (alertar para instaurar TCE), como sendo exercidas 'no apoio ao controle externo'."
+            },
+            {
+                question: "A responsabilidade do dirigente do controle interno, em caso de omissão na comunicação de irregularidade ao TCU, é de natureza pessoal e intransferível, não podendo ser solidária.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 51 e o § 2º do mesmo artigo estabelecem, de forma expressa, que a responsabilidade do dirigente omisso é **solidária**."
+            },
+            {
+                question: "O pronunciamento do Ministro de Estado supervisor da área é o ato pelo qual ele concorda ou discorda das conclusões do parecer do controle interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme a parte final do Art. 52, o pronunciamento serve para que o Ministro 'atestará haver **tomado conhecimento** das conclusões', não se tratando de um juízo de concordância ou discordância."
+            },
+            {
+                question: "O controle das garantias e dos avais concedidos pela União é uma das finalidades do sistema de controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde a uma das finalidades expressamente listadas no inciso III do Art. 49."
+            },
+            {
+                question: "As atividades que os órgãos de controle interno exercem em apoio ao controle externo estão taxativamente listadas nos incisos do Art. 50.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 50 afirma que os órgãos deverão exercer, '**dentre outras**', as atividades listadas, o que torna o rol exemplificativo, e não taxativo."
+            },
+            {
+                question: "A comunicação de irregularidade ao TCU, feita pelo controle interno, deve ser realizada após a conclusão das apurações internas, para garantir a precisão das informações.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 51 determina que a ciência ao TCU deve ser dada '**de imediato**' ao tomar conhecimento do fato, não podendo aguardar a conclusão de procedimentos internos."
+            },
+            {
+                question: "Para que o dirigente do controle interno seja sancionado por omissão, basta que o TCU constate a existência de uma irregularidade não comunicada.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 51 exige, além da constatação da irregularidade não comunicada, que a omissão do dirigente seja **provada** ('e provada a omissão')."
+            },
+            {
+                question: "O pronunciamento previsto no Art. 52 pode ser emitido por autoridade de nível hierárquico equivalente a Ministro de Estado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois o Art. 52 legitima 'O Ministro de Estado supervisor da área **ou** a autoridade de nível hierárquico equivalente' para emitir o ato."
+            },
+            {
+                question: "O sistema de controle interno é mantido de forma integrada pelos três Poderes da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do caput do Art. 49."
+            },
+            {
+                question: "Ao realizar auditorias, o controle interno emite um relatório e um parecer, mas não um certificado de auditoria.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 50 lista os três documentos que devem ser emitidos: 'relatório, **certificado de auditoria** e parecer'."
+            },
+            {
+                question: "A comunicação de irregularidade ao TCU, feita pelo dirigente do controle interno, exime-o do dever de indicar as providências saneadoras, que serão de responsabilidade exclusiva do gestor.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 51 estabelece que, na comunicação, o dirigente 'indicará as providências adotadas para evitar ocorrências semelhantes'."
+            },
+            {
+                question: "O pronunciamento ministerial é um ato de caráter expresso.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, conforme a redação do Art. 52, que classifica o pronunciamento como '**expresso** e indelegável'."
+            },
+            {
+                question: "A avaliação da eficácia da gestão patrimonial em entidades da administração federal é uma das finalidades do controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso II do Art. 49 menciona a avaliação de resultados 'quanto à eficácia e à eficiência da gestão orçamentária, financeira e **patrimonial**'."
+            },
+            {
+                question: "O alerta do controle interno para instauração de TCE deve ocorrer apenas nos casos de omissão do dever de prestar contas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 50 determina o alerta sempre que o controle interno tiver conhecimento de 'qualquer das ocorrências referidas no caput do art. 8°', que inclui, além da omissão, desfalque, desvio, dano ao erário, entre outras."
+            },
+            {
+                question: "A responsabilidade solidária do dirigente do controle interno por omissão na comunicação ao TCU é uma sanção aplicada diretamente pela autoridade administrativa a que ele é vinculado.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A responsabilidade solidária é apurada e imputada pelo próprio **Tribunal de Contas da União**, conforme se depreende da leitura do § 2º do Art. 51, que estabelece o procedimento no âmbito do TCU."
+            },
+            {
+                question: "O pronunciamento ministerial é um documento que incide apenas sobre o parecer do controle interno, não abrangendo as contas em si.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 52 estabelece que o pronunciamento será emitido 'sobre as **contas e** o parecer do controle interno'."
+            },
+            {
+                question: "O apoio ao controle externo é a única finalidade do sistema de controle interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 49 lista quatro finalidades distintas, sendo o apoio ao controle externo (inciso IV) apenas uma delas."
+            },
+            {
+                question: "Ao ter conhecimento de um desfalque, o dever do controle interno é, primeiramente, alertar a autoridade administrativa para que instaure TCE e, só após, comunicar o fato ao TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Os deveres são simultâneos e independentes. O Art. 51 exige comunicação 'de imediato' ao TCU ao tomar conhecimento da irregularidade, enquanto o Art. 50 exige o alerta à autoridade competente. Não há relação de prejudicialidade ou sucessão entre eles."
+            },
+            {
+                question: "Se a omissão do dirigente de controle interno for provada, ele será responsabilizado solidariamente, ficando sujeito às sanções cabíveis.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e resume com precisão o procedimento e a consequência estabelecidos no § 2º do Art. 51."
+            },
+            {
+                question: "O pronunciamento do Ministro de Estado supervisor pode ser considerado tácito, caso ele não se manifeste no prazo legal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 52 exige um pronunciamento **expresso**, o que afasta a possibilidade de aceitação tácita."
+            },
+            {
+                question: "A avaliação do cumprimento das metas do plano plurianual não é atribuição do sistema de controle interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 49 estabelece como primeira finalidade do controle interno 'avaliar o cumprimento das metas previstas no plano plurianual'."
+            },
+            {
+                question: "A realização de auditorias nas contas dos responsáveis é uma atividade de apoio ao controle externo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso II do Art. 50, que descreve essa atividade, está inserido no rol de atividades 'no apoio ao controle externo'."
+            },
+            {
+                question: "A comunicação de irregularidade ao TCU é um dever do dirigente do órgão de controle interno, não se estendendo aos demais membros da equipe.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 1º e o § 2º do Art. 51 direcionam a responsabilidade e o dever de comunicação ao '**dirigente do órgão competente**' e ao 'dirigente do órgão de controle interno'."
+            },
+            {
+                question: "O único propósito do pronunciamento ministerial é dar ciência formal ao Ministro sobre as conclusões do controle interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 52 limita o conteúdo do pronunciamento a atestar o conhecimento das conclusões, servindo como um 'ciente' formal e indelegável da autoridade máxima da pasta."
+            },
+            {
+                question: "O sistema de controle interno não abrange o Poder Legislativo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 49 menciona expressamente que o sistema é mantido pelos Poderes **Legislativo**, Executivo e Judiciário."
+            },
+            {
+                question: "O alerta para instauração de TCE pelo controle interno é dirigido à autoridade administrativa competente, que tem a discricionariedade de decidir se instaura ou não o procedimento.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta na segunda parte. Embora o alerta seja dirigido à autoridade, o Art. 8º da mesma lei (mencionado no inciso III do Art. 50) estabelece que a autoridade **deverá** adotar providências, sob pena de responsabilidade solidária. Portanto, não se trata de um ato discricionário."
+            },
+            {
+                question: "A responsabilidade solidária do dirigente do controle interno por omissão é de natureza civil, não se confundindo com sanções administrativas aplicadas pelo TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 51 é claro ao afirmar que o dirigente 'ficará sujeito às **sanções** previstas para a espécie nesta Lei', indicando que a responsabilidade solidária se materializa pela aplicação das sanções administrativas (multa, débito) no âmbito do próprio TCU."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiscalização a Cargo do Tribunal</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Multas</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 60</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "Se um responsável for julgado em débito, o Tribunal de Contas da União deverá, obrigatoriamente, aplicar-lhe multa de cem por cento do valor atualizado do dano.",
+                answer: "Errado",
+                rationale: "A assertiva contém dois erros. O Art. 57 estabelece que o Tribunal poderá aplicar a multa, tratando-se de um ato discricionário, e não obrigatório. Além disso, o valor é de até cem por cento, sendo um teto, e não um valor fixo."
+            },
+            {
+                question: "A multa por ato praticado com grave infração à norma legal ou regulamentar de natureza contábil tem seu valor máximo fixado em portaria da Presidência do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A infração mencionada é uma das hipóteses de aplicação da multa do Art. 58 (inciso II). O § 2º do mesmo artigo estabelece que o valor teto previsto no caput será atualizado periodicamente por portaria da Presidência."
+            },
+            {
+                question: "O débito decorrente de multa aplicada pelo Tribunal, quando pago após o seu vencimento, será acrescido de juros de mora, mas não de atualização monetária.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 59 determina expressamente que o valor será atualizado monetariamente na data do efetivo pagamento."
+            },
+            {
+                question: "A sanção de inabilitação para o exercício de cargo em comissão, aplicada pelo TCU, substitui as multas e demais penalidades administrativas cabíveis.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 é claro ao afirmar que a inabilitação ocorre 'sem prejuízo das sanções previstas na seção anterior e das penalidades administrativas', tratando-se de uma sanção cumulativa, e não substitutiva."
+            },
+            {
+                question: "O Tribunal de Contas da União pode decretar, diretamente e de ofício, o arresto dos bens dos responsáveis julgados em débito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o Art. 61, o Tribunal não decreta o arresto diretamente, mas sim solicita a medida à Advocacia-Geral da União ou aos dirigentes das entidades jurisdicionadas, e essa solicitação se dá 'por intermédio do Ministério Público'."
+            },
+            {
+                question: "A multa proporcional ao dano, prevista no Art. 57, pode ser aplicada em casos de contas julgadas irregulares, mesmo que delas não resulte débito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A condição expressa no caput do Art. 57 para a aplicação desta multa é que o responsável seja 'julgado em débito'."
+            },
+            {
+                question: "O não atendimento injustificado a uma diligência do Relator ou a uma decisão do Tribunal sujeita o responsável à multa de valor fixo atualizável.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde exatamente à infração descrita no inciso IV do Art. 58."
+            },
+            {
+                question: "A gradação da multa prevista no Art. 58 é definida por portaria da Presidência do Tribunal, em função da gravidade da infração.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 58 estabelece que a gradação da multa será disposta no Regimento Interno. A portaria da Presidência (conforme § 2º) serve para atualizar o valor teto da multa, não para graduá-la."
+            },
+            {
+                question: "A inabilitação para o exercício de função de confiança, por um período de cinco a oito anos, exige decisão da maioria absoluta dos membros do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve com precisão a sanção, seu prazo e o quórum qualificado exigido pelo Art. 60."
+            },
+            {
+                question: "O Tribunal deve ser ouvido quanto à liberação e restituição dos bens dos responsáveis que tenham sido arrestados por sua solicitação.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo à parte final do Art. 61, que assegura a participação do Tribunal na decisão sobre a liberação dos bens."
+            },
+            {
+                question: "A reincidência no descumprimento de determinação do Tribunal é uma das infrações puníveis com a multa de valor fixo atualizável.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à infração listada no inciso VII do Art. 58."
+            },
+            {
+                question: "O valor da multa do Art. 58 é atualizado com base em índice definido em lei, a ser aplicado pelo Plenário do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva contém dois erros. O § 2º do Art. 58 estabelece que a atualização é feita por portaria da Presidência, não pelo Plenário, e utiliza o índice de atualização dos créditos tributários da União, não um índice definido em lei específica para esse fim."
+            },
+            {
+                question: "A atualização monetária prevista no Art. 59 aplica-se apenas ao débito decorrente de multa, não ao débito principal (ressarcimento).",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A redação do Art. 59 é específica ao tratar do 'débito decorrente de multa'. O débito principal (ressarcimento) já é atualizado monetariamente como parte da própria condenação (conforme Art. 19)."
+            },
+            {
+                question: "A sanção de inabilitação aplica-se a qualquer cargo público, efetivo ou em comissão.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao ampliar o alcance da sanção. O Art. 60 restringe a inabilitação ao 'exercício de cargo em comissão ou função de confiança', não se aplicando a cargos efetivos."
+            },
+            {
+                question: "O arresto de bens pode ser solicitado para responsáveis que foram condenados apenas ao pagamento de multa, sem imputação de débito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 61 é claro ao condicionar a solicitação de arresto aos 'responsáveis julgados em débito'."
+            },
+            {
+                question: "A multa do Art. 57 é aplicada de forma discricionária pelo Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O uso do verbo 'poderá' no Art. 57 confere ao Tribunal a faculdade de aplicar ou não a multa, mesmo nos casos em que o responsável é julgado em débito."
+            },
+            {
+                question: "A obstrução ao livre exercício de auditorias e a sonegação de documentos em inspeções são infrações distintas, mas sujeitas à mesma penalidade de multa prevista no Art. 58.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A obstrução é prevista no inciso V do Art. 58, e a sonegação no inciso VI. Ambas são infrações que sujeitam o responsável à multa do caput do mesmo artigo."
+            },
+            {
+                question: "Aquele que, mesmo com motivo justificado, deixar de dar cumprimento a uma decisão do Tribunal estará sujeito à multa do Art. 58.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 58 estabelece uma exceção clara, isentando de multa aquele que deixar de cumprir a decisão por 'motivo justificado'."
+            },
+            {
+                question: "A aplicação da sanção de inabilitação para o exercício de cargo em comissão depende da gravidade da infração, a ser aferida pelo Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 60 condiciona a aplicação da sanção à hipótese de o Tribunal 'considerar grave a infração cometida'."
+            },
+            {
+                question: "O Tribunal solicita o arresto de bens diretamente à Advocacia-Geral da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao omitir um intermediário crucial. O Art. 61 estabelece que a solicitação se dá 'por intermédio do Ministério Público' junto ao Tribunal."
+            },
+            {
+                question: "A multa para contas julgadas irregulares de que não resulte débito está prevista no Art. 57.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A multa para contas irregulares sem débito é a do Art. 58, inciso I. O Art. 57 trata da multa aplicada quando há débito."
+            },
+            {
+                question: "O Regimento Interno do TCU é a norma que dispõe sobre a gradação da multa do Art. 58.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao disposto no § 3º do Art. 58."
+            },
+            {
+                question: "O período de inabilitação do responsável para o exercício de função de confiança será de, no máximo, cinco anos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 estabelece que o período 'variará de cinco a oito anos'."
+            },
+            {
+                question: "O Ministério Público junto ao Tribunal atua como intermediário na solicitação de arresto de bens.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, descrevendo com precisão o papel do Ministério Público nesse procedimento, conforme o Art. 61."
+            },
+            {
+                question: "Um ato de gestão ilegítimo de que resulte dano injustificado ao Erário sujeita o responsável à multa do Art. 58.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à infração descrita no inciso III do Art. 58."
+            },
+            {
+                question: "A sanção de inabilitação para o exercício de cargo em comissão só pode ser aplicada se houver trânsito em julgado de sentença penal condenatória.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A sanção do Art. 60 é de natureza administrativa, aplicada pelo próprio TCU, independentemente da esfera penal. As instâncias são independentes."
+            },
+            {
+                question: "O débito de multa, se não pago no vencimento, sofre apenas atualização monetária, sem incidência de juros de mora.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 59 menciona apenas que o valor 'será atualizado monetariamente', não fazendo referência à cobrança de juros de mora para a multa, diferentemente do que ocorre com o débito principal (conforme Art. 19)."
+            },
+            {
+                question: "A inabilitação para o exercício de cargo de confiança pode ser decidida por maioria simples dos membros do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 exige um quórum qualificado, determinando que a decisão seja tomada 'por maioria absoluta de seus membros'."
+            },
+            {
+                question: "O arresto de bens pode ser solicitado pelo TCU para garantir o ressarcimento do valor correspondente à multa aplicada.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 61 autoriza a solicitação de arresto para 'responsáveis julgados em débito', referindo-se ao ressarcimento do dano, e não ao pagamento de multa."
+            },
+            {
+                question: "A atualização do valor da multa do Art. 58 é realizada periodicamente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, conforme o § 2º do Art. 58, que estabelece que o valor 'será atualizado, periodicamente'."
+            },
+            {
+                question: "A multa de até cem por cento do valor do dano, prevista no Art. 57, é de aplicação obrigatória sempre que o responsável for julgado em débito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 57 utiliza o verbo 'poderá', indicando que a aplicação desta multa é uma faculdade (ato discricionário) do Tribunal, e não uma obrigação."
+            },
+            {
+                question: "A sonegação de um processo em uma inspeção realizada pelo TCU é uma das infrações que sujeitam o responsável à multa de valor fixo atualizável.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à infração descrita no inciso VI do Art. 58."
+            },
+            {
+                question: "O débito decorrente de multa aplicada com base no Art. 57, se pago com atraso, não sofrerá atualização monetária.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 59 é claro ao determinar a atualização monetária do 'débito decorrente de multa aplicada pelo Tribunal de Contas da União nos do art. 57', aplicando-se a essa espécie de multa."
+            },
+            {
+                question: "A decisão do TCU que inabilita um responsável para o exercício de cargo em comissão pode ser tomada por maioria simples de seus membros.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 exige um quórum qualificado para essa sanção, que deve ser deliberada 'por maioria absoluta de seus membros'."
+            },
+            {
+                question: "O Tribunal de Contas da União pode solicitar o arresto de bens de um responsável condenado apenas ao pagamento de multa, para garantir a quitação da sanção.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 61 restringe a solicitação de arresto de bens aos 'responsáveis julgados em débito', referindo-se ao ressarcimento do dano ao erário, e não à cobrança de multa."
+            },
+            {
+                question: "A multa prevista no Art. 57 é calculada sobre o valor histórico do dano causado ao Erário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 57 especifica que a multa é de até cem por cento do valor atualizado do dano."
+            },
+            {
+                question: "Deixar de dar cumprimento a uma decisão do Tribunal, mesmo que por motivo justificado, sujeita o responsável à multa prevista no Art. 58.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 58 estabelece uma exceção clara, isentando de multa aquele que deixar de cumprir a decisão por 'salvo motivo justificado'."
+            },
+            {
+                question: "A gradação da multa do Art. 58, conforme a gravidade da infração, é matéria a ser disposta no Regimento Interno do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde exatamente ao que determina o § 3º do Art. 58."
+            },
+            {
+                question: "A sanção de inabilitação tem um prazo que pode variar de cinco a oito anos, a ser definido pelo Tribunal no caso concreto.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, refletindo com precisão o período variável da sanção, conforme estabelecido no Art. 60."
+            },
+            {
+                question: "A solicitação de arresto de bens pelo TCU é dirigida ao Ministério Público junto ao Tribunal, que, por sua vez, a encaminha à Advocacia-Geral da União ou ao dirigente da entidade lesada.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve fielmente a cadeia de solicitação prevista no Art. 61 (TCU solicita via MP, que aciona a AGU ou o dirigente)."
+            },
+            {
+                question: "A multa do Art. 57 pode ser aplicada cumulativamente com a condenação ao ressarcimento do débito.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A redação do Art. 57 ('Quando o responsável for julgado em débito, poderá ainda o Tribunal aplicar-lhe multa...') deixa claro que a multa é uma sanção adicional ao ressarcimento do dano."
+            },
+            {
+                question: "Um ato de gestão que, embora legítimo, seja antieconômico e resulte em dano injustificado ao Erário é uma infração passível da multa do Art. 58.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à infração descrita no inciso III do Art. 58."
+            },
+            {
+                question: "A atualização monetária de uma multa paga em atraso será calculada com base na data do vencimento original.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 59 determina que a atualização será feita 'na data do efetivo pagamento'."
+            },
+            {
+                question: "A inabilitação para o exercício de cargo em comissão é aplicável apenas a servidores públicos, não alcançando particulares que tenham cometido infrações graves.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 refere-se ao 'responsável', termo que, na jurisdição do TCU, abrange tanto agentes públicos quanto particulares que gerenciem ou causem dano a recursos públicos. A sanção impede o exercício futuro do cargo, aplicando-se a qualquer pessoa."
+            },
+            {
+                question: "O Tribunal de Contas da União pode solicitar o arresto de bens diretamente aos dirigentes das entidades que lhe sejam jurisdicionadas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao omitir a etapa de intermediação. Conforme o Art. 61, a solicitação deve ser feita 'por intermédio do Ministério Público' junto ao Tribunal."
+            },
+            {
+                question: "A multa por contas julgadas irregulares de que não resulte débito está prevista no Art. 58.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. É a infração tipificada no inciso I do Art. 58."
+            },
+            {
+                question: "O índice utilizado para a atualização do valor da multa do Art. 58 é definido pelo Regimento Interno do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 58 especifica que será utilizado 'o índice utilizado para atualização dos créditos tributários da União'."
+            },
+            {
+                question: "Se o Tribunal considerar grave a infração cometida, o responsável ficará, obrigatoriamente, inabilitado para o exercício de cargo em comissão.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 60 utiliza a forma verbal 'ficará inabilitado', indicando que, uma vez preenchidos os pressupostos (infração grave e quórum de maioria absoluta), a aplicação da sanção é um poder-dever, e não uma faculdade."
+            },
+            {
+                question: "O arresto de bens, conforme o Art. 61, é uma medida que pode ser solicitada pelo Tribunal em qualquer fase do processo, mesmo antes do julgamento.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 61 condiciona a solicitação de arresto aos 'responsáveis julgados em débito', ou seja, a medida é posterior à decisão definitiva que constituiu o débito."
+            },
+            {
+                question: "A multa do Art. 57 e a do Art. 58 são mutuamente excludentes, não podendo ser aplicadas na mesma decisão.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. É possível que um responsável seja julgado em débito (o que atrai a multa do Art. 57) e, no mesmo processo, tenha cometido uma infração formal grave, como obstrução à fiscalização (o que atrai a multa do Art. 58). As multas têm fundamentos distintos e podem ser aplicadas cumulativamente."
+            },
+            {
+                question: "A atualização do valor teto da multa do Art. 58 é feita por portaria da Presidência do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao procedimento descrito no § 2º do Art. 58."
+            },
+            {
+                question: "A inabilitação prevista no Art. 60 impede o responsável de exercer função de confiança no âmbito de toda a Administração Pública, incluindo as esferas estadual e municipal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 restringe o alcance da sanção 'no âmbito da Administração Pública', que, no contexto da Lei Orgânica do TCU, refere-se à esfera federal."
+            },
+            {
+                question: "A multa do Art. 59, por ser acessória, prescreve juntamente com o débito principal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A Lei Orgânica do TCU não prevê prescrição para o ressarcimento ao erário. A multa, por sua vez, possui natureza sancionatória e está sujeita à prescrição, conforme entendimento do STF. O artigo em si trata apenas da atualização do valor, não da prescrição."
+            },
+            {
+                question: "A solicitação de arresto de bens é uma medida discricionária do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O uso da forma verbal 'poderá (...) solicitar' no Art. 61 indica que a medida é uma faculdade do Tribunal, a ser avaliada conforme o caso concreto."
+            },
+            {
+                question: "A sanção de inabilitação para o exercício de cargo em comissão é uma penalidade administrativa aplicada pela autoridade competente, e não pelo TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 é claro ao estabelecer que o Tribunal considera a infração grave e que, por consequência, 'o responsável ficará inabilitado'. A sanção é aplicada diretamente pelo TCU, sem prejuízo de outras penalidades aplicadas pela autoridade administrativa."
+            },
+            {
+                question: "O descumprimento de uma decisão do Tribunal, mesmo sem motivo justificado, não é passível de multa se não estiver listado nos incisos do Art. 58.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 58 cria uma hipótese autônoma de multa, estabelecendo que ficará sujeito à sanção 'aquele que deixar de dar cumprimento à decisão do Tribunal, salvo motivo justificado'."
+            },
+            {
+                question: "A aplicação da multa do Art. 57 exclui a possibilidade de o responsável sofrer a sanção de inabilitação do Art. 60.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 60 começa com a expressão 'Sem prejuízo das sanções previstas na seção anterior', que inclui o Art. 57. Portanto, as sanções são cumuláveis."
+            },
+            {
+                question: "O Tribunal deve ser ouvido apenas para a liberação dos bens arrestados, mas não para a sua restituição ao proprietário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A parte final do Art. 61 estabelece que o Tribunal 'deve ser ouvido quanto à liberação dos bens arrestados e sua restituição'."
+            },
+            {
+                question: "A reincidência no descumprimento de determinação do Tribunal e o não atendimento a uma diligência no prazo são infrações distintas, mas punidas com a mesma espécie de multa.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A reincidência está no inciso VII do Art. 58, e o não atendimento à diligência está no inciso IV. Ambas as infrações sujeitam o responsável à multa de valor fixo atualizável do caput do Art. 58."
+            },
+            {
+                question: "A multa por ato de gestão ilegítimo de que resulte dano injustificado ao erário tem seu valor máximo limitado a cem por cento do valor do dano.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao confundir as multas. A infração descrita está no inciso III do Art. 58, cuja penalidade é a multa de valor fixo atualizável. A multa limitada a 100% do dano é a do Art. 57, que tem como pressuposto o julgamento em débito, e não um tipo específico de ato de gestão."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

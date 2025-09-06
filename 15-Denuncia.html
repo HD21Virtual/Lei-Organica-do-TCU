@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiscalização a Cargo do Tribunal</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgância da TCU</h1>
+            <p>Denúncia</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A legitimidade para denunciar irregularidades ou ilegalidades perante o Tribunal de Contas da União é restrita a cidadãos e partidos políticos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 53 estabelece um rol mais amplo de legitimados, que inclui 'qualquer cidadão, partido político, associação ou sindicato'."
+            },
+            {
+                question: "A apuração de uma denúncia no âmbito do TCU tramitará, desde o início, em caráter público para garantir a transparência dos atos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 53 determina o oposto, estabelecendo que a denúncia 'será apurada em caráter sigiloso, até que se comprove a sua procedência'."
+            },
+            {
+                question: "Uma denúncia somente poderá ser arquivada após a realização das diligências pertinentes, por meio de despacho fundamentado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde exatamente às condições para arquivamento estabelecidas na parte final do § 3º do Art. 53."
+            },
+            {
+                question: "Reunidas as provas que indiquem a existência de irregularidade, os demais atos do processo se tornarão públicos, sendo assegurada a ampla defesa aos acusados.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, refletindo com precisão o procedimento de transição do sigilo para a publicidade e a garantia do contraditório, conforme o § 4º do Art. 53."
+            },
+            {
+                question: "O denunciante poderá requerer ao TCU certidão dos fatos apurados, a qual deverá ser fornecida em até quinze dias, mesmo que a apuração não esteja concluída.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao não observar a condição da regra geral. O caput do Art. 54 condiciona o fornecimento da certidão a que o processo 'tenha sido concluído ou arquivado'. A liberação com investigação em andamento é uma exceção, regida por outro prazo."
+            },
+            {
+                question: "Decorridos noventa dias do recebimento do pedido de certidão, o Tribunal será obrigado a fornecê-la, ainda que as investigações não estejam concluídas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto ao marco inicial da contagem do prazo. O parágrafo único do Art. 54 estabelece que o prazo de noventa dias é contado a partir do recebimento da denúncia, e não do pedido de certidão."
+            },
+            {
+                question: "Em regra, o TCU dará tratamento sigiloso às denúncias até a decisão definitiva sobre a matéria, visando resguardar os direitos e garantias individuais.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do caput do Art. 55. É importante notar que essa regra de sigilo é ponderada com a regra de publicidade do Art. 53, § 4º."
+            },
+            {
+                question: "O denunciante goza de imunidade absoluta, não podendo ser sujeito a qualquer sanção administrativa, cível ou penal em decorrência da denúncia.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A imunidade não é absoluta. O § 2º do Art. 55 estabelece uma exceção clara: 'salvo em caso de comprovada má-fé'."
+            },
+            {
+                question: "Ao decidir o mérito de uma denúncia, o Tribunal poderá manter o sigilo da autoria e do objeto se entender que a medida é imprescindível à segurança da sociedade e do Estado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve com precisão a faculdade e as condições estabelecidas no § 3º do Art. 55 para a manutenção do sigilo na fase decisória."
+            },
+            {
+                question: "A apuração de uma denúncia permanecerá sigilosa até que haja uma decisão definitiva de mérito sobre a matéria.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 4º do Art. 53 estabelece que os atos do processo se tornarão públicos assim que forem 'reunidas as provas que indiquem a existência de irregularidade', o que ocorre antes da decisão definitiva. Há um aparente conflito com o caput do Art. 55, mas a regra específica de publicidade processual do Art. 53 prevalece."
+            },
+            {
+                question: "Qualquer associação, independentemente de sua finalidade, é parte legítima para denunciar irregularidades perante o TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 53 menciona 'associação' de forma genérica, sem impor restrições quanto à sua natureza ou finalidade."
+            },
+            {
+                question: "Uma denúncia pode ser arquivada por meio de despacho simples do responsável, caso não haja indícios de irregularidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 53 exige que o arquivamento ocorra somente 'após efetuadas as diligências pertinentes' e mediante 'despacho fundamentado'."
+            },
+            {
+                question: "O direito à ampla defesa é garantido aos acusados somente após a conclusão definitiva do processo de denúncia.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 4º do Art. 53 assegura a ampla defesa a partir do momento em que os atos do processo se tornam públicos, ou seja, durante a fase de instrução processual e antes da decisão."
+            },
+            {
+                question: "O prazo de quinze dias para o fornecimento de certidão ao denunciante começa a contar a partir do arquivamento do processo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o caput do Art. 54, o prazo de quinze dias começa a contar 'do recebimento do pedido' de certidão."
+            },
+            {
+                question: "Decorridos três meses do recebimento da denúncia, o fornecimento de certidão ao denunciante é obrigatório, mesmo com as investigações em curso.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O prazo de noventa dias, previsto no parágrafo único do Art. 54, equivale a três meses, e a norma determina o fornecimento obrigatório da certidão 'ainda que não estejam concluídas as investigações'."
+            },
+            {
+                question: "A proteção ao denunciante contra sanções cíveis e penais não se aplica no âmbito administrativo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 55 é explícito ao garantir a proteção contra 'qualquer sanção administrativa, cível ou penal'."
+            },
+            {
+                question: "A manutenção do sigilo da denúncia na decisão final é uma obrigação do Tribunal, visando proteger o denunciante.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o § 3º do Art. 55, a manutenção do sigilo é uma faculdade ('caberá ao Tribunal manter') e seu fundamento é a 'segurança da sociedade e do Estado', não a proteção do denunciante."
+            },
+            {
+                question: "O sigilo da fase de apuração da denúncia cessa com a comprovação de sua procedência.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo à literalidade da primeira parte do § 3º do Art. 53, que estabelece que o sigilo dura 'até que se comprove a sua procedência'."
+            },
+            {
+                question: "A certidão fornecida ao denunciante após noventa dias do recebimento da denúncia conterá a decisão final do Tribunal sobre o caso.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 54 se aplica justamente quando as investigações não estão concluídas. Portanto, a certidão informará sobre os despachos e fatos já apurados, mas não conterá uma decisão final, que ainda não existe."
+            },
+            {
+                question: "A má-fé do denunciante, para afastar sua imunidade, deve ser comprovada.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 2º do Art. 55 condiciona a responsabilização do denunciante à 'comprovada má-fé', exigindo prova inequívoca de sua intenção de prejudicar."
+            },
+            {
+                question: "A oportunidade de ampla defesa, no processo de denúncia, é um direito exclusivo dos acusados.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 4º do Art. 53 especifica que será assegurada 'aos acusados a oportunidade de ampla defesa'."
+            },
+            {
+                question: "Se um processo de apuração de denúncia for concluído em sessenta dias, o denunciante já poderá requerer a certidão dos fatos apurados.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 54 permite o requerimento da certidão assim que o processo for 'concluído ou arquivado'. A regra dos noventa dias é uma exceção para o caso de o processo ainda estar em andamento."
+            },
+            {
+                question: "A proteção ao denunciante contra sanções visa encorajar o exercício do controle social.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Embora a lei não declare o motivo, a natureza da norma prevista no § 2º do Art. 55, ao proteger o denunciante de retaliações (salvo má-fé), tem como finalidade lógica e jurídica estimular que cidadãos e entidades denunciem irregularidades, fomentando o controle social."
+            },
+            {
+                question: "O sigilo do objeto da denúncia pode ser mantido pelo Tribunal em sua decisão final.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 3º do Art. 55 prevê a possibilidade de manter o sigilo 'do objeto e da autoria da denúncia'."
+            },
+            {
+                question: "Um sindicato é parte ilegítima para denunciar ilegalidades perante o TCU, devendo a denúncia ser feita por um de seus filiados na qualidade de cidadão.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 53 elenca o sindicato, como pessoa jurídica, como parte legítima para oferecer denúncia."
+            },
+            {
+                question: "Se as diligências pertinentes não forem efetuadas, a denúncia não poderá ser arquivada.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, sendo a consequência lógica da regra do § 3º do Art. 53, que afirma que a denúncia 'somente poderá ser arquivada após efetuadas as diligências pertinentes'."
+            },
+            {
+                question: "O denunciante tem o direito de requerer certidão de todos os atos do processo, inclusive daqueles protegidos por sigilo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 54 especifica que a certidão é 'dos despachos e dos fatos apurados', não de todos os atos. Além disso, o fornecimento é condicionado ao fim do processo (regra geral) ou ao decurso de 90 dias, respeitando-se o sigilo da apuração inicial."
+            },
+            {
+                question: "A decisão de manter o sigilo do objeto e autoria da denúncia é um ato discricionário do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O uso da expressão 'caberá ao Tribunal manter' no § 3º do Art. 55, atrelado à condição 'quando imprescindível', confere à decisão um caráter discricionário, baseado em um juízo de valor sobre a segurança da sociedade e do Estado."
+            },
+            {
+                question: "A quebra do sigilo da apuração ocorre quando há indícios de procedência da denúncia, tornando-se os atos públicos a partir de então.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e sintetiza o fluxo de sigilo e publicidade previsto nos §§ 3º e 4º do Art. 53. O sigilo dura 'até que se comprove a sua procedência' e, 'reunidas as provas', os demais atos se tornam públicos."
+            },
+            {
+                question: "O denunciante de má-fé poderá ser responsabilizado nas esferas cível e penal, mas não na administrativa.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 55 prevê a possibilidade de sanção 'administrativa, cível ou penal' para o denunciante de má-fé, abrangendo as três esferas."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

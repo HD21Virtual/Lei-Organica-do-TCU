@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiscalização a Cargo do Tribunal</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Pedido de Reexame</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 10</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O pedido de reexame é o recurso cabível contra qualquer decisão proferida pelo Tribunal de Contas da União, independentemente da matéria tratada no processo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 48 restringe o cabimento do pedido de reexame às decisões proferidas em processos 'concernentes às matérias de que tratam as Seções III e IV deste capítulo' (Fiscalização de Atos e Contratos e Atos Sujeitos a Registro), não sendo aplicável a todos os processos, como os de tomada de contas, por exemplo."
+            },
+            {
+                question: "O pedido de reexame, diferentemente do recurso de reconsideração, não possui efeito suspensivo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 48 afirma expressamente que o pedido de reexame 'terá efeito suspensivo'. A 'pegadinha' está na falsa comparação, pois tanto o pedido de reexame quanto o recurso de reconsideração (Art. 33) possuem efeito suspensivo."
+            },
+            {
+                question: "As regras processuais aplicáveis ao pedido de reexame, como prazo e legitimidade para recorrer, são as mesmas estabelecidas para o recurso de reconsideração.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O parágrafo único do Art. 48 determina que o pedido de reexame se regerá pelo disposto no Art. 33, que é o artigo que estabelece as regras para o recurso de reconsideração (prazo de 15 dias, legitimidade do responsável, interessado ou MP, etc.)."
+            },
+            {
+                question: "O prazo para a interposição de pedido de reexame é de trinta dias, contados da ciência da decisão pelo responsável.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Como o pedido de reexame segue as regras do Art. 33 (conforme parágrafo único do Art. 48), o prazo para sua interposição é de quinze dias, e não trinta."
+            },
+            {
+                question: "Apenas o responsável pelo ato pode interpor pedido de reexame contra a decisão do TCU, excluindo-se o Ministério Público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Ao remeter ao Art. 33, o parágrafo único do Art. 48 estende ao pedido de reexame a legitimidade conferida ao recurso de reconsideração, que pode ser formulado 'pelo responsável ou interessado, ou pelo Ministério Público junto ao Tribunal'."
+            },
+            {
+                question: "O pedido de reexame será julgado pelo Plenário do Tribunal, independentemente do órgão que proferiu a decisão original.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A regra aplicável é a do Art. 33, que determina que o recurso 'será apreciado por quem houver proferido a decisão recorrida'. Assim, se a decisão foi de uma Câmara, a própria Câmara julgará o pedido de reexame."
+            },
+            {
+                question: "Um pedido de reexame interposto fora do prazo legal não será conhecido pelo Tribunal em nenhuma hipótese, por ser intempestivo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 48 também remete ao parágrafo único do Art. 32, que estabelece uma exceção à regra da intempestividade: o recurso poderá ser conhecido 'em razão da superveniência de fatos novos na forma prevista no Regimento Interno'."
+            },
+            {
+                question: "Cabe pedido de reexame, com efeito suspensivo, de decisão proferida em processo de fiscalização de atos e contratos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois combina de forma precisa o efeito suspensivo previsto no caput do Art. 48 com o escopo de aplicação do recurso, que abrange as matérias da Seção III (Fiscalização de Atos e Contratos)."
+            },
+            {
+                question: "O pedido de reexame e o recurso de reconsideração são instrumentos recursais idênticos, com nomes diferentes, aplicáveis aos mesmos tipos de processo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Embora o pedido de reexame 'pegue emprestado' as regras processuais do recurso de reconsideração, eles são instrumentos distintos, aplicáveis a processos de natureza diferente. O recurso de reconsideração é para decisões em tomada ou prestação de contas (Art. 32), enquanto o pedido de reexame é para decisões em processos de fiscalização e de registro de atos (Art. 48)."
+            },
+            {
+                question: "Com base nas regras que lhe são aplicáveis, o pedido de reexame pode ser formulado por escrito e apenas uma vez.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A remissão ao Art. 33, feita pelo parágrafo único do Art. 48, importa a aplicação da regra de que o recurso 'poderá ser formulado por escrito uma só vez'."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
