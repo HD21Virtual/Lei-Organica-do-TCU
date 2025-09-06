@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ministério Público Junto ao Tribunal</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Ministério Público Junto ao Tribunal</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 60</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O Ministério Público junto ao Tribunal de Contas da União é composto por um procurador-geral, quatro subprocuradores-gerais e três procuradores.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao inverter os números. Conforme o Art. 80, a composição é de um procurador-geral, três subprocuradores-gerais e quatro procuradores."
+            },
+            {
+                question: "A audiência do Ministério Público é obrigatória em todos os processos sujeitos à decisão do Tribunal de Contas da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 81 estabelece a obrigatoriedade da audiência apenas nos processos de tomada ou prestação de contas e nos concernentes a atos de pessoal (admissão, aposentadoria, etc.), não em todos os processos."
+            },
+            {
+                question: "A atuação dos subprocuradores-gerais e procuradores junto ao TCU se dá por competência originária, não dependendo de delegação do procurador-geral.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 82 é explícito ao afirmar que os subprocuradores-gerais e procuradores exercem suas funções 'por delegação do procurador-geral'."
+            },
+            {
+                question: "O Ministério Público junto ao TCU dispõe de uma secretaria própria e autônoma para seu apoio administrativo e de pessoal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 83 estabelece que o Ministério Público contará com o apoio da secretaria do Tribunal, não possuindo uma estrutura administrativa própria e autônoma."
+            },
+            {
+                question: "A Lei Orgânica do Ministério Público da União é a principal norma que rege os direitos e vedações dos membros do MP junto ao TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o Art. 84, a Lei Orgânica do MPU aplica-se de forma subsidiária, ou seja, apenas para preencher as lacunas da Lei Orgânica do TCU, que é a norma principal."
+            },
+            {
+                question: "Unidade, indivisibilidade e independência funcional são princípios institucionais do Ministério Público junto ao TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde aos três princípios institucionais listados no caput do Art. 80."
+            },
+            {
+                question: "O ingresso na carreira do Ministério Público junto ao TCU ocorre no cargo de procurador, por meio de concurso público de provas e títulos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, descrevendo com precisão a forma de ingresso na carreira, conforme o § 3º do Art. 80."
+            },
+            {
+                question: "Compete ao procurador-geral interpor os recursos permitidos em lei.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das atribuições do procurador-geral, listada no inciso IV do Art. 81."
+            },
+            {
+                question: "Em caso de ausência do procurador-geral, sua substituição será feita prioritariamente pelos procuradores, observada a ordem de antiguidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao inverter a linha de substituição. O parágrafo único do Art. 82 determina que o procurador-geral será substituído primeiramente pelos subprocuradores-gerais, e só na ausência destes, pelos procuradores."
+            },
+            {
+                question: "A organização do apoio administrativo e de pessoal da secretaria do Tribunal ao Ministério Público é estabelecida na Lei Orgânica do MPU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 83 estabelece que a organização desse apoio será 'estabelecida no Regimento Interno' do TCU."
+            },
+            {
+                question: "Os membros do Ministério Público junto ao TCU são nomeados pelo Presidente da República, dentre brasileiros bacharéis em direito.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve os requisitos e a autoridade nomeante, conforme o caput do Art. 80."
+            },
+            {
+                question: "A diferença de vencimentos entre o cargo de procurador e o de subprocurador-geral não pode exceder a dez por cento.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 2º do Art. 80 estabelece esse limite de dez por cento na diferença de vencimentos entre as classes da carreira."
+            },
+            {
+                question: "O procurador-geral, em sua missão de guarda da lei, deve comparecer às sessões do Tribunal, mas sua manifestação é sempre facultativa.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 81, após afirmar o dever de comparecer, torna obrigatória sua audiência em processos de contas e de atos de pessoal."
+            },
+            {
+                question: "Em caso de vacância do cargo de procurador-geral, o subprocurador-geral mais antigo assumirá a função, mas não fará jus aos vencimentos do cargo exercido.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A parte final do parágrafo único do Art. 82 garante que o substituto fará 'jus, nessas substituições, aos vencimentos do cargo exercido'."
+            },
+            {
+                question: "As vedações e o regime disciplinar dos membros do MP junto ao TCU são regulados, de forma subsidiária, pela Lei Orgânica do Ministério Público da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde exatamente a duas das matérias listadas no Art. 84 para as quais a Lei do MPU é aplicada subsidiariamente."
+            },
+            {
+                question: "A participação da Ordem dos Advogados do Brasil no concurso para procurador do MP junto ao TCU é facultativa.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 80 estabelece que a participação da OAB é assegurada, tratando-se de um requisito obrigatório."
+            },
+            {
+                question: "A promoção ao cargo de subprocurador-geral se dá exclusivamente pelo critério de merecimento.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 80 determina que a promoção se fará, alternadamente, por antiguidade e merecimento."
+            },
+            {
+                question: "Compete ao procurador-geral promover, perante a Advocacia-Geral da União, as medidas necessárias ao arresto de bens de responsáveis julgados em débito.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso III do Art. 81 remete ao Art. 61, que trata exatamente da solicitação de arresto de bens, confirmando essa atribuição."
+            },
+            {
+                question: "A substituição do procurador-geral, na ausência dos subprocuradores-gerais, seguirá o critério de merecimento entre os procuradores.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 82 estabelece que o critério de escolha, tanto entre os subprocuradores quanto entre os procuradores, é o de antiguidade no cargo, ou maior idade como desempate."
+            },
+            {
+                question: "Os direitos e garantias dos membros do MP junto ao TCU são definidos exclusivamente pela Lei Orgânica do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 84 prevê a aplicação subsidiária da Lei Orgânica do MPU justamente para matérias como direitos, garantias e prerrogativas, complementando o que a Lei do TCU dispõe."
+            },
+            {
+                question: "A carreira do Ministério Público junto ao TCU é composta pelos cargos de procurador, subprocurador-geral e procurador-geral.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 80 é explícito ao afirmar que a carreira 'é constituída pelos cargos de subprocurador-geral e procurador'. O cargo de procurador-geral é um cargo de chefia, exercido por um dos membros da carreira, mas não integra a carreira em si."
+            },
+            {
+                question: "A nomeação dos aprovados no concurso para procurador do MP junto ao TCU pode ocorrer livremente, sem observar a ordem de classificação.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 80 exige que seja 'observada, nas nomeações, a ordem de classificação'."
+            },
+            {
+                question: "Promover a defesa da ordem jurídica é uma das atribuições do procurador-geral junto ao TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à atribuição listada no inciso I do Art. 81."
+            },
+            {
+                question: "Na ausência de todos os subprocuradores-gerais, o procurador-geral será substituído pelo procurador mais jovem.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 82 estabelece que o critério é a antiguidade, e o critério de desempate, em caso de idêntica antiguidade, é a maior idade, e não a menor."
+            },
+            {
+                question: "A forma de investidura no cargo inicial da carreira do MP junto ao TCU é regulada subsidiariamente pela Lei Orgânica do MPU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 84 lista a 'forma de investidura no cargo inicial da carreira' como uma das matérias para as quais a Lei do MPU se aplica subsidiariamente."
+            },
+            {
+                question: "O cargo de procurador é o último nível da carreira do Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 80 define o cargo de procurador como o inicial, e o de subprocurador-geral como o último nível da carreira."
+            },
+            {
+                question: "A audiência do Ministério Público é obrigatória nos processos de concessão de aposentadorias, reformas e pensões.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde a uma das hipóteses de audiência obrigatória do Parquet de Contas, conforme o inciso II do Art. 81."
+            },
+            {
+                question: "A delegação de funções do procurador-geral aos demais membros do MP é uma faculdade, não uma obrigação.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 82 indica que os outros membros atuam 'por delegação', o que pressupõe um ato de delegação do chefe da instituição, caracterizando uma faculdade de organização interna."
+            },
+            {
+                question: "O apoio administrativo da secretaria do TCU ao Ministério Público é uma liberalidade do Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 83 utiliza o verbo 'contará', indicando um direito do Ministério Público a esse apoio, e não uma liberalidade ou favor."
+            },
+            {
+                question: "A diferença de vencimentos entre o cargo de subprocurador-geral e procurador-geral deve respeitar o limite de dez por cento.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, conforme a parte final do § 2º do Art. 80."
+            },
+            {
+                question: "Os princípios institucionais do Ministério Público junto ao TCU incluem a unidade, a indivisibilidade e a publicidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 80 estabelece os princípios da unidade, da indivisibilidade e da independência funcional, não mencionando o da publicidade nesse rol."
+            },
+            {
+                question: "A carreira do Ministério Público junto ao TCU possui três níveis: procurador, subprocurador-geral e procurador-geral.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 80 é explícito ao afirmar que a carreira 'é constituída pelos cargos de subprocurador-geral e procurador'. O cargo de procurador-geral é um cargo de chefia, ocupado por um membro da carreira, mas não um nível da carreira em si."
+            },
+            {
+                question: "O procurador-geral pode requerer, perante o TCU, medidas de interesse da justiça, da administração e do Erário.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade da atribuição de defesa da ordem jurídica, prevista no inciso I do Art. 81."
+            },
+            {
+                question: "Em caso de ausência simultânea do procurador-geral e de todos os subprocuradores-gerais, o procurador mais moderno substituirá o chefe da instituição.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 82 estabelece que a substituição seguirá a ordem de antiguidade no cargo, e não o critério do mais moderno (mais novo)."
+            },
+            {
+                question: "A Lei Orgânica do Ministério Público da União aplica-se de forma principal e direta aos membros do Ministério Público junto ao TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 84 determina que a Lei Orgânica do MPU aplica-se de forma subsidiária e 'no que couber', ou seja, apenas para complementar a Lei Orgânica do TCU."
+            },
+            {
+                question: "A nomeação para o cargo de procurador do MP junto ao TCU exige, entre outros requisitos, que o candidato seja brasileiro e bacharel em direito.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde aos requisitos de nacionalidade e formação acadêmica previstos no caput do Art. 80, aplicáveis a todos os membros."
+            },
+            {
+                question: "A participação da Ordem dos Advogados do Brasil na realização do concurso público para procurador é uma exigência legal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 3º do Art. 80 afirma que é 'assegurada a participação da Ordem dos Advogados do Brasil em sua realização'."
+            },
+            {
+                question: "A manifestação do Ministério Público é obrigatória em processos de fiscalização de contratos, mesmo que não haja irregularidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 81, ao listar as hipóteses de audiência obrigatória, não inclui os processos de fiscalização de contratos em geral, focando em contas e atos de pessoal."
+            },
+            {
+                question: "O subprocurador-geral que substitui o procurador-geral durante as férias deste último receberá os vencimentos correspondentes ao cargo de procurador-geral.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois o parágrafo único do Art. 82 garante que o substituto fará 'jus, nessas substituições, aos vencimentos do cargo exercido'."
+            },
+            {
+                question: "O apoio de pessoal da secretaria do Tribunal ao Ministério Público é organizado conforme estabelecido na Lei Orgânica do MPU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 83 estabelece que a organização do apoio será 'estabelecida no Regimento Interno' do TCU."
+            },
+            {
+                question: "A nomeação dos membros do MP junto ao TCU é de competência do Presidente do Tribunal de Contas da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 80 atribui a competência de nomeação ao Presidente da República."
+            },
+            {
+                question: "A promoção ao cargo de subprocurador-geral se dá, alternadamente, pelos critérios de antiguidade e merecimento.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao critério misto de promoção estabelecido na parte final do § 3º do Art. 80."
+            },
+            {
+                question: "O procurador-geral, ao comparecer às sessões do Tribunal, pode manifestar-se verbalmente ou por escrito sobre os assuntos em pauta.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso II do Art. 81 prevê que o procurador-geral dirá de direito, 'verbalmente ou por escrito'."
+            },
+            {
+                question: "Em caso de vacância do cargo de procurador-geral, um novo concurso público deve ser realizado para o preenchimento da vaga.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A vacância do cargo de chefia é suprida pela substituição, conforme o parágrafo único do Art. 82. O concurso público, segundo o § 3º do Art. 80, é para o ingresso na carreira, no cargo inicial de procurador."
+            },
+            {
+                question: "A Lei Orgânica do MPU regula subsidiariamente o regime disciplinar dos membros do MP junto ao TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 84 inclui o 'regime disciplinar' no rol de matérias a serem complementadas pela Lei Orgânica do MPU."
+            },
+            {
+                question: "O cargo de subprocurador-geral representa o último nível da carreira do MP junto ao TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à estrutura de carreira descrita no § 2º do Art. 80."
+            },
+            {
+                question: "A lista de atribuições do procurador-geral, contida no Art. 81, é exaustiva.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 81 afirma que as atribuições são as listadas, 'além de outras estabelecidas no Regimento Interno', o que torna o rol exemplificativo."
+            },
+            {
+                question: "Os subprocuradores-gerais possuem atribuições originárias e independentes daquelas do procurador-geral.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 82 estabelece que os subprocuradores-gerais e procuradores atuam 'por delegação', indicando uma relação de subordinação funcional ao procurador-geral."
+            },
+            {
+                question: "O Ministério Público junto ao TCU conta com apoio administrativo e de pessoal fornecido pela secretaria do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do Art. 83."
+            },
+            {
+                question: "A aplicação da Lei Orgânica do MPU aos membros do MP junto ao TCU é integral e irrestrita.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 84 impõe duas condições para a aplicação: que seja de forma subsidiária e 'no que couber', indicando que a aplicação não é nem integral nem irrestrita."
+            },
+            {
+                question: "A diferença de vencimentos entre o cargo de subprocurador-geral e o de procurador-geral pode ser de até vinte por cento.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A parte final do § 2º do Art. 80 estabelece que deve ser respeitada 'igual diferença', ou seja, o mesmo limite de dez por cento aplicável entre as classes da carreira."
+            },
+            {
+                question: "A manifestação do Ministério Público é obrigatória em processos de admissão de pessoal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das hipóteses de audiência obrigatória previstas no inciso II do Art. 81."
+            },
+            {
+                question: "Se dois subprocuradores-gerais tiverem a mesma antiguidade, o critério de desempate para a substituição do procurador-geral será o de maior idade.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois descreve com precisão o critério de desempate estabelecido no parágrafo único do Art. 82."
+            },
+            {
+                question: "As prerrogativas dos membros do MP junto ao TCU são definidas exclusivamente na Lei Orgânica do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 84 prevê que as prerrogativas também são regidas, de forma complementar, pela Lei Orgânica do Ministério Público da União."
+            },
+            {
+                question: "A carreira do MPjTCU é una, sendo os cargos de subprocurador-geral e procurador apenas classes distintas.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 2º do Art. 80 descreve uma carreira com um cargo inicial (procurador) e um final (subprocurador-geral), o que caracteriza uma carreira una com promoção entre os níveis."
+            },
+            {
+                question: "O procurador-geral pode atuar em qualquer processo de interesse da justiça, mesmo que não envolva diretamente a administração ou o Erário.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso I do Art. 81 permite que o procurador-geral requeira medidas de interesse da justiça, da administração e do Erário, tratando-os como interesses distintos e autônomos que podem ser defendidos."
+            },
+            {
+                question: "A delegação de funções pelo procurador-geral só pode ser feita aos subprocuradores-gerais, não aos procuradores.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 82 menciona que compete 'aos subprocuradores-gerais e procuradores' exercer as funções por delegação."
+            },
+            {
+                question: "O apoio administrativo e de pessoal ao MPjTCU é de responsabilidade da Advocacia-Geral da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 83 atribui a responsabilidade pelo apoio à secretaria do Tribunal de Contas da União."
+            },
+            {
+                question: "O regime de vedações aplicável aos membros do MP junto ao TCU é idêntico ao dos membros do Ministério Público da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A aplicação da Lei Orgânica do MPU é subsidiária (Art. 84). Isso significa que as vedações previstas na própria Lei Orgânica do TCU (norma principal) prevalecem, e as da Lei do MPU só se aplicam se não houver conflito e para complementar. Portanto, o regime não é necessariamente idêntico."
+            },
+            {
+                question: "A promoção na carreira do MPjTCU para o cargo de subprocurador-geral depende de aprovação em novo concurso público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 80 estabelece que a promoção se dará pelos critérios de antiguidade e merecimento, não por novo concurso. O concurso é apenas para o ingresso no cargo inicial de procurador."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado CEBRASPE - Ministros do TCU</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Ministros</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 60</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "Para ser nomeado ministro do Tribunal de Contas da União, o candidato deve comprovar, cumulativamente, notórios conhecimentos jurídicos, contábeis, econômicos, financeiros e de administração pública.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 71 utiliza a conjunção alternativa 'ou', indicando que basta ter notórios conhecimentos em uma dessas áreas ('jurídicos, contábeis, econômicos e financeiros') ou de administração pública. A troca do 'ou' pelo 'e' (cumulativamente) é uma 'pegadinha' clássica."
+            },
+            {
+                question: "A escolha de um terço dos ministros do TCU é de competência do Presidente da República, com aprovação do Senado Federal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde exatamente à forma de provimento de vagas estabelecida no inciso I do Art. 72."
+            },
+            {
+                question: "Os ministros do TCU possuem as mesmas garantias, prerrogativas e vencimentos dos ministros do Supremo Tribunal Federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 73 estabelece uma simetria de garantias e vantagens com os ministros do Superior Tribunal de Justiça (STJ), e não do Supremo Tribunal Federal (STF)."
+            },
+            {
+                question: "É vedado a um ministro do TCU o exercício de qualquer outro cargo ou função, ainda que em disponibilidade, inclusive uma de magistério.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao não considerar a exceção. O inciso I do Art. 74 veda a acumulação de cargos, 'salvo uma de magistério'."
+            },
+            {
+                question: "A incompatibilidade por parentesco até o segundo grau entre ministros, se verificada antes da posse e com nomeações na mesma data, resolve-se contra o ministro mais velho.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do parágrafo único do Art. 76 estabelece que a incompatibilidade se resolve 'contra o último nomeado ou contra o mais moço', e não o mais velho."
+            },
+            {
+                question: "Um dos requisitos para a nomeação ao cargo de ministro do TCU é contar mais de dez anos de exercício de função ou de efetiva atividade profissional que exija os conhecimentos específicos da área.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à exigência de experiência profissional qualificada, conforme o inciso IV do Art. 71."
+            },
+            {
+                question: "Todas as vagas de ministro do TCU de competência do Presidente da República devem ser preenchidas por auditores ou membros do Ministério Público indicados em lista tríplice.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 72 estabelece que, das três vagas do Presidente, 'sendo duas alternadamente dentre auditores e membros do Ministério Público'. Isso significa que uma das três vagas é de livre escolha do Presidente, desde que o nomeado preencha os requisitos do Art. 71 e seja aprovado pelo Senado."
+            },
+            {
+                question: "A garantia da vitaliciedade assegura que um ministro do TCU não pode perder o cargo, salvo por sentença judicial transitada em julgado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve com precisão a garantia da vitaliciedade, conforme o inciso I do parágrafo único do Art. 73."
+            },
+            {
+                question: "É permitido ao ministro do TCU exercer a direção de uma associação de classe, desde que não seja de forma remunerada.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde à exceção prevista na parte final do inciso II do Art. 74."
+            },
+            {
+                question: "A incompatibilidade por parentesco entre ministros se resolve, depois da posse, contra o que tiver menos tempo de exercício no Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o inciso II do parágrafo único do Art. 76, depois da posse, a incompatibilidade se resolve 'contra o que lhe deu causa'. A regra do tempo de exercício (inciso III) só se aplica se a ambos for imputável a causa."
+            },
+            {
+                question: "A idade mínima para ser nomeado ministro do TCU é de trinta e cinco anos, e a máxima é de sessenta e cinco anos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto ao limite máximo de idade. O inciso I do Art. 71 estabelece a idade como 'mais de trinta e cinco e menos de sessenta e cinco anos', o que significa que, ao completar 65 anos, o candidato já não pode mais ser nomeado."
+            },
+            {
+                question: "A escolha de dois terços dos ministros do TCU é de competência do Congresso Nacional.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo ao que dispõe o inciso II do Art. 72."
+            },
+            {
+                question: "Um ministro do TCU só poderá se aposentar com as vantagens integrais do cargo se o tiver exercido efetivamente por mais de cinco anos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A parte final do caput do Art. 73 estabelece expressamente essa condição."
+            },
+            {
+                question: "É vedado ao ministro do TCU participar de sociedade comercial, mesmo que na condição de acionista ou cotista sem poderes de gerência.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 74 veda a participação em sociedade comercial, 'exceto como acionista ou cotista sem ingerência'."
+            },
+            {
+                question: "É vedada a ocupação simultânea de cargos de ministro do TCU por parentes consanguíneos ou afins, em qualquer grau.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 76 restringe a vedação ao parentesco, na linha reta ou colateral, até o segundo grau."
+            },
+            {
+                question: "A lista tríplice para a escolha de ministros pelo Presidente da República é elaborada pelo Plenário do TCU, com base nos critérios de antiguidade e merecimento.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, descrevendo com precisão o procedimento previsto no inciso I do Art. 72."
+            },
+            {
+                question: "A aposentadoria compulsória dos ministros do TCU ocorre aos setenta e cinco anos de idade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do parágrafo único do Art. 73 estabelece a aposentadoria compulsória 'aos setenta anos de idade'."
+            },
+            {
+                question: "É vedado ao ministro do TCU exercer comissão remunerada, mas permitido se não houver remuneração.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 74 veda o exercício de comissão, seja ela 'remunerada ou não'."
+            },
+            {
+                question: "A incompatibilidade por parentesco que surge após a posse e é imputável a ambos os ministros resolve-se contra o que deu causa ao impedimento.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Se a ambos é imputável a causa, a regra aplicável é a do inciso III do parágrafo único do Art. 76, que resolve a questão 'contra o que tiver menos tempo de exercício no Tribunal'."
+            },
+            {
+                question: "O candidato a ministro do TCU deve ter reputação ilibada e idoneidade moral.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde aos requisitos previstos no inciso II do Art. 71."
+            },
+            {
+                question: "A aprovação do Senado Federal é necessária para a nomeação de todos os ministros do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A aprovação do Senado Federal é exigida apenas para as nomeações de competência do Presidente da República (um terço das vagas), conforme o inciso I do Art. 72. As nomeações feitas pelo Congresso Nacional (dois terços) não passam por essa aprovação."
+            },
+            {
+                question: "A garantia da inamovibilidade aplica-se aos ministros do Tribunal de Contas da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A inamovibilidade é uma das garantias listadas no inciso II do parágrafo único do Art. 73."
+            },
+            {
+                question: "É permitido ao ministro do TCU dedicar-se à atividade político-partidária, desde que se licencie do cargo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso VI do Art. 74 estabelece uma vedação absoluta à dedicação 'à atividade político-partidária'."
+            },
+            {
+                question: "O parentesco por afinidade em linha reta, como a relação entre sogro e genro, impede a ocupação simultânea de cargos de ministro do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 76 veda a simultaneidade para parentes 'consangüíneos ou afins, na linha reta', o que inclui a relação de afinidade mencionada."
+            },
+            {
+                question: "A aposentadoria facultativa de um ministro do TCU pode ocorrer após trinta anos de serviço, com proventos integrais.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde à hipótese de aposentadoria facultativa descrita no inciso IV do parágrafo único do Art. 73, sempre observada a regra dos cinco anos de exercício do caput."
+            },
+            {
+                question: "Um ministro do TCU pode celebrar contrato com uma empresa pública, se o contrato obedecer a normas uniformes aplicáveis a qualquer contratante.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois descreve a exceção à regra de vedação de contratar com o Poder Público, conforme a parte final do inciso V do Art. 74."
+            },
+            {
+                question: "A indicação para a lista tríplice de vagas de ministro do TCU é de competência do Presidente da República.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 72 estabelece que a lista tríplice é indicada 'pelo Plenário' do próprio Tribunal."
+            },
+            {
+                question: "A garantia da irredutibilidade de vencimentos dos ministros do TCU é absoluta, não se sujeitando a qualquer teto ou imposto.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do parágrafo único do Art. 73, ao mesmo tempo em que garante a irredutibilidade, ressalva a observância das regras constitucionais sobre o teto remuneratório e a incidência de impostos."
+            },
+            {
+                question: "É vedado ao ministro do TCU exercer a advocacia.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O exercício da advocacia se enquadra na vedação ao 'exercer profissão liberal' prevista no inciso IV do Art. 74."
+            },
+            {
+                question: "A incompatibilidade por parentesco, se verificada antes da posse, resolve-se contra o último nomeado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Esta é a primeira regra de resolução para a incompatibilidade pré-posse, conforme o inciso I do parágrafo único do Art. 76."
+            },
+            {
+                question: "A idade para nomeação como ministro do TCU é um intervalo fechado, que vai dos trinta e cinco aos sessenta e cinco anos, inclusive.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 71 estabelece um intervalo aberto nos limites, exigindo que o candidato tenha 'mais de trinta e cinco e menos de sessenta e cinco anos'. Portanto, 35 e 65 anos, exatamente, estão fora da faixa etária permitida."
+            },
+            {
+                question: "Dos nove ministros do TCU, três são escolhidos pelo Presidente da República e seis pelo Congresso Nacional.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A proporção corresponde exatamente à divisão de competência para a escolha dos ministros, conforme o Art. 72: um terço (3/9) pelo Presidente da República e dois terços (6/9) pelo Congresso Nacional."
+            },
+            {
+                question: "Um ministro do TCU que tenha exercido o cargo por quatro anos e se aposente não terá direito às vantagens pecuniárias integrais do cargo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 73 condiciona a aposentadoria com as vantagens do cargo ao exercício efetivo 'por mais de cinco anos'."
+            },
+            {
+                question: "É vedado ao ministro do TCU ser cotista de uma sociedade comercial, mesmo que não possua poderes de gerência.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 74 estabelece uma exceção expressa à vedação, permitindo a participação em sociedade comercial 'como acionista ou cotista sem ingerência'."
+            },
+            {
+                question: "A incompatibilidade por parentesco entre ministros se estende a primos, por serem parentes na linha colateral.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Primos são parentes colaterais de quarto grau. O caput do Art. 76 restringe a vedação ao parentesco, na linha reta ou colateral, até o segundo grau (que abrange irmãos, avós e netos)."
+            },
+            {
+                question: "Um candidato com notórios conhecimentos em administração pública, mas sem formação em direito, contabilidade, economia ou finanças, preenche o requisito de conhecimento técnico para ser ministro do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso III do Art. 71 apresenta os campos de conhecimento de forma alternativa, usando a conjunção 'ou'. Assim, notórios conhecimentos em 'administração pública' são suficientes para preencher o requisito."
+            },
+            {
+                question: "A escolha dos ministros pelo Congresso Nacional também requer aprovação subsequente pelo Senado Federal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A aprovação pelo Senado Federal, conforme o inciso I do Art. 72, é uma condição apenas para as nomeações feitas pelo Presidente da República."
+            },
+            {
+                question: "A garantia da irredutibilidade de vencimentos dos ministros do TCU é absoluta, não estando sujeita ao teto remuneratório constitucional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do parágrafo único do Art. 73, ao mesmo tempo que estabelece a garantia, ressalva expressamente a observância das normas constitucionais sobre remuneração, que incluem o teto remuneratório."
+            },
+            {
+                question: "Um ministro do TCU pode ministrar aulas em uma universidade privada.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso I do Art. 74 permite o exercício de 'uma de magistério', que é a única exceção à regra de dedicação exclusiva."
+            },
+            {
+                question: "Se a incompatibilidade por parentesco for causada pela posse de um novo ministro, a questão se resolve contra este último, que deu causa ao impedimento.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à aplicação da regra do inciso II do parágrafo único do Art. 76: 'depois da posse, contra o que lhe deu causa'."
+            },
+            {
+                question: "Um brasileiro naturalizado pode ser nomeado ministro do Tribunal de Contas da União.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 71 exige que os ministros sejam 'brasileiros', não fazendo distinção entre natos e naturalizados, como a Constituição faz para outros cargos."
+            },
+            {
+                question: "O Plenário do TCU, ao formar a lista tríplice para a vaga do Presidente da República, deve se basear apenas no critério de merecimento.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 72 estabelece que a lista tríplice será elaborada segundo os critérios de antiguidade e merecimento."
+            },
+            {
+                question: "A perda do cargo de ministro do TCU pode ocorrer por meio de processo administrativo disciplinar conduzido pelo próprio Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Devido à garantia da vitaliciedade (Art. 73, parágrafo único, I), um ministro só pode perder o cargo 'por sentença judicial transitada em julgado'."
+            },
+            {
+                question: "É permitido ao ministro do TCU celebrar contrato de aluguel de um imóvel de sua propriedade com um órgão público, desde que o valor esteja de acordo com o mercado, aplicando-se a exceção das normas uniformes.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A situação se enquadra na exceção do inciso V do Art. 74, pois um contrato de aluguel com valor de mercado obedece a 'normas uniformes para todo e qualquer contratante', não configurando um privilégio."
+            },
+            {
+                question: "Se dois cunhados forem nomeados ministros do TCU, a situação de incompatibilidade estará configurada.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O cunhado é parente por afinidade em segundo grau na linha colateral, o que se enquadra na vedação do caput do Art. 76, que abrange parentes 'afins (...) na colateral, até o segundo grau'."
+            },
+            {
+                question: "A exigência de experiência profissional de mais de dez anos pode ser dispensada se o candidato tiver notórios conhecimentos jurídicos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Os requisitos do Art. 71 são cumulativos. A experiência de mais de dez anos (inciso IV) é obrigatória e deve ser em uma área que exija os conhecimentos do inciso III."
+            },
+            {
+                question: "A escolha de ministros do TCU pelo Congresso Nacional é feita em sessão conjunta, por votação secreta.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A Constituição e a lei em questão não detalham o rito, mas a prática e o regimento do Congresso estabelecem que a escolha é feita em votações separadas, primeiro na Câmara e depois no Senado. A lei fornecida apenas diz que a escolha é 'pelo Congresso Nacional'."
+            },
+            {
+                question: "Um ministro do TCU pode se aposentar voluntariamente com proventos integrais aos trinta anos de serviço, independentemente do tempo de exercício no cargo de ministro.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do parágrafo único do Art. 73, que prevê a aposentadoria facultativa, faz uma ressalva expressa à regra do caput, que exige o exercício efetivo do cargo por mais de cinco anos para obter as vantagens integrais."
+            },
+            {
+                question: "É vedado ao ministro do TCU exercer cargo de direção em qualquer tipo de fundação, mesmo que não seja remunerado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso II do Art. 74 veda o exercício de cargo de direção em 'sociedade civil, associação ou fundação, de qualquer natureza ou finalidade', excetuando apenas as associações de classe não remuneradas, não abrangendo as fundações."
+            },
+            {
+                question: "Se a nomeação de dois ministros incompatíveis por parentesco ocorrer na mesma data, a incompatibilidade se resolve contra o que tiver menos tempo de serviço público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do parágrafo único do Art. 76 estabelece que, em caso de nomeações na mesma data, a incompatibilidade se resolve 'contra o mais moço'."
+            },
+            {
+                question: "A aprovação pelo Senado Federal é condição para a posse dos ministros do TCU indicados pelo Presidente da República.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso I do Art. 72 exige a 'aprovação do Senado Federal' para as escolhas do Presidente da República."
+            },
+            {
+                question: "Os impedimentos aplicáveis aos ministros do STJ são os mesmos aplicáveis aos ministros do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 73 estabelece essa simetria de regime jurídico, incluindo expressamente os 'impedimentos'."
+            },
+            {
+                question: "A irredutibilidade de vencimentos é uma das garantias dos ministros do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde à garantia listada no inciso III do parágrafo único do Art. 73."
+            },
+            {
+                question: "Um ministro do TCU pode filiar-se a um partido político.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso VI do Art. 74 veda expressamente a dedicação 'à atividade político-partidária', o que inclui a filiação."
+            },
+            {
+                question: "A vedação de parentesco para ocupação simultânea do cargo de ministro aplica-se à relação entre tio e sobrinho.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Tio e sobrinho são parentes colaterais de terceiro grau. A vedação do caput do Art. 76 vai somente até o segundo grau na linha colateral."
+            },
+            {
+                question: "Um advogado com 12 anos de efetiva atividade profissional preenche o requisito de experiência do inciso IV do Art. 71, desde que também possua notórios conhecimentos jurídicos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A advocacia é uma atividade profissional que exige conhecimentos jurídicos, e 12 anos é um período superior aos 10 anos exigidos pela norma."
+            },
+            {
+                question: "A lista tríplice para as vagas do Presidente da República deve conter, obrigatoriamente, nomes de auditores e de membros do Ministério Público.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso I do Art. 72 indica que as duas vagas especiais são preenchidas 'dentre auditores e membros do Ministério Público', o que implica que a lista deve ser composta por nomes dessas duas carreiras."
+            },
+            {
+                question: "A aposentadoria por invalidez comprovada, com proventos integrais, é um direito dos ministros do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das modalidades de aposentadoria previstas no inciso IV do parágrafo único do Art. 73."
+            },
+            {
+                question: "Um ministro do TCU pode exercer comissão não remunerada em uma concessionária de serviço público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 74 veda o exercício de comissão 'remunerada ou não', inclusive em 'concessionárias de serviço público'."
+            },
+            {
+                question: "Se uma incompatibilidade por parentesco surgir após a posse de ambos os ministros, e não for possível definir quem deu causa, a questão se resolverá contra o mais moço.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A regra para o caso de a ambos ser imputável a causa (o que se assemelha à impossibilidade de definir um único causador) está no inciso III do parágrafo único do Art. 76, que resolve a questão 'contra o que tiver menos tempo de exercício no Tribunal'."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

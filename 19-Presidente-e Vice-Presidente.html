@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presidente e Vice-Presidente</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Presidente e Vice-Presidente</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 60</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O mandato do Presidente e do Vice-Presidente do Tribunal de Contas da União é de dois anos, permitida uma única reeleição.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 69 estabelece que o mandato corresponde a um ano civil."
+            },
+            {
+                question: "A reeleição para os cargos de Presidente e Vice-Presidente do TCU é permitida por apenas um período de igual duração.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo exatamente à regra de reeleição prevista na parte final do caput do Art. 69."
+            },
+            {
+                question: "A eleição para os cargos de direção do TCU é realizada por escrutínio aberto, para garantir a transparência do processo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 69 determina que a eleição realizar-se-á em escrutínio secreto."
+            },
+            {
+                question: "O quórum mínimo para a realização da eleição na Corte de Contas é de cinco ministros titulares, inclusive aquele que estiver presidindo o ato.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve com precisão o quórum de presença exigido pelo § 1º do Art. 69."
+            },
+            {
+                question: "Compete ao Presidente do Tribunal de Contas da União exercer as funções de corregedor.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o § 2º do Art. 69, quem exercerá as funções de corregedor é o Vice-Presidente."
+            },
+            {
+                question: "Na ausência simultânea do Presidente e do Vice-Presidente, o ministro mais antigo em exercício no cargo substituirá o Presidente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois descreve a linha sucessória prevista no § 3º do Art. 69."
+            },
+            {
+                question: "O ministro eleito para uma vaga na presidência ocorrida antes do término do mandato cumprirá um novo mandato completo de um ano.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 4º do Art. 69 estabelece que o eleito para a vaga exercerá o cargo apenas no período restante (mandato-tampão)."
+            },
+            {
+                question: "Se a vaga na presidência ocorrer quarenta e cinco dias antes do término do mandato, não se procederá a nova eleição.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 5º do Art. 69 estabelece que não haverá nova eleição se a vaga ocorrer 'dentro dos sessenta dias anteriores ao término do mandato'. O período de 45 dias está contido nesse intervalo, portanto, a eleição não será realizada."
+            },
+            {
+                question: "A eleição para o cargo de Vice-Presidente deve ocorrer antes da eleição para o cargo de Presidente.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 6º do Art. 69 estabelece a ordem oposta: 'A eleição do Presidente precederá à do Vice-Presidente'."
+            },
+            {
+                question: "Se nenhum candidato a Presidente obtiver a maioria dos votos no primeiro escrutínio, o mais antigo no cargo será declarado eleito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 7º do Art. 69 determina que, nesse caso, proceder-se-á a um novo escrutínio entre os dois mais votados. A antiguidade só é usada como critério de desempate se persistir o empate nesse segundo escrutínio."
+            },
+            {
+                question: "Ministros titulares que estejam em gozo de licença ou férias estão impedidos de tomar parte nas eleições para Presidente e Vice-Presidente.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 8º do Art. 69 garante expressamente que os ministros titulares poderão tomar parte nas eleições, 'ainda que em gozo de licença, férias, ou ausentes com causa justificada'."
+            },
+            {
+                question: "A eleição regular para os cargos de direção do TCU ocorre na última sessão ordinária do mês de novembro.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 69 especifica que a eleição regular ocorrerá 'na última sessão ordinária do mês de dezembro'."
+            },
+            {
+                question: "As atribuições do corregedor do TCU, cargo exercido pelo Vice-Presidente, são definidas na própria Lei Orgânica.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 69 estabelece que as atribuições do corregedor serão 'estabelecidas no Regimento Interno'."
+            },
+            {
+                question: "Em caso de vaga eventual na presidência, a nova eleição ocorrerá na primeira sessão ordinária após a sua ocorrência.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao procedimento para vaga eventual, conforme o § 1º do Art. 69."
+            },
+            {
+                question: "Se ocorrer uma vaga na presidência 70 dias antes do fim do mandato, uma nova eleição deverá ser realizada.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A regra de dispensa da eleição do § 5º só se aplica a vagas ocorridas 'dentro dos sessenta dias' antes do término. Como 70 dias está fora desse período, a eleição é obrigatória."
+            },
+            {
+                question: "Na eleição para Presidente, considera-se eleito o ministro que obtiver a maioria absoluta dos votos dos membros do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 7º do Art. 69 menciona 'maioria dos votos', o que corresponde à maioria simples dos votos dos presentes na sessão, e não à maioria absoluta dos nove ministros."
+            },
+            {
+                question: "A forma como os ministros ausentes poderão votar nas eleições é estabelecida no Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 8º do Art. 69, após garantir o direito de voto aos ausentes, determina que a participação se dará 'na forma estabelecida no Regimento Interno'."
+            },
+            {
+                question: "O Vice-Presidente do TCU substitui o Presidente apenas em suas ausências, não em seus impedimentos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 69 é explícito ao prever a substituição 'em suas ausências ou impedimentos'."
+            },
+            {
+                question: "Na ausência do Vice-Presidente, quem o substitui nas funções de corregedor é o ministro mais antigo em exercício.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º estabelece que o ministro mais antigo substitui o Presidente (na dupla ausência), não o Vice-Presidente. A lei não especifica quem substitui o corregedor."
+            },
+            {
+                question: "Se, em um segundo escrutínio entre dois candidatos, houver empate, a eleição será decidida por sorteio.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O critério de desempate final previsto no § 7º do Art. 69 é a antiguidade no cargo de ministro do Tribunal, e não sorteio."
+            },
+            {
+                question: "Apenas ministros titulares podem ser eleitos para os cargos de Presidente e Vice-Presidente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 69 diz que 'Os ministros elegerão o Presidente e o Vice-Presidente', e o § 8º especifica que apenas os 'ministros titulares' participam. A elegibilidade está restrita a este mesmo grupo."
+            },
+            {
+                question: "O quórum para a eleição no TCU é de, no mínimo, a maioria absoluta dos seus membros.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Sendo o Tribunal composto por 9 ministros, a maioria absoluta é 5. O § 1º do Art. 69 exige a presença de 'pelo menos, cinco ministros titulares'."
+            },
+            {
+                question: "A eleição do Presidente e do Vice-Presidente do TCU pode ocorrer na mesma votação.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 6º do Art. 69 estabelece uma ordem de precedência, indicando votações separadas e sequenciais: 'A eleição do Presidente precederá à do Vice-Presidente'."
+            },
+            {
+                question: "A reeleição para o cargo de Presidente é vedada.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 69 é claro ao afirmar que é 'permitida a reeleição apenas por um período de igual duração'."
+            },
+            {
+                question: "Um auditor convocado para substituir um ministro titular pode votar nas eleições para Presidente.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 8º do Art. 69 é restritivo: 'Somente os ministros titulares (...) poderão tomar parte nas eleições', excluindo, portanto, os auditores em substituição."
+            },
+            {
+                question: "Se um ministro for eleito para completar um mandato vago de apenas 50 dias, não haverá nova eleição.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A situação descrita não ocorre, pois, conforme o § 5º do Art. 69, se a vaga na presidência ocorrer quando faltarem menos de 60 dias para o fim do mandato, não se realizará nova eleição."
+            },
+            {
+                question: "O mandato de Presidente do TCU corresponde a um ano civil, iniciando-se em 1º de janeiro e terminando em 31 de dezembro.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A expressão 'ano civil' utilizada no caput do Art. 69 tem exatamente esse significado no direito brasileiro."
+            },
+            {
+                question: "O Vice-Presidente, ao substituir o Presidente, acumula a função de corregedor.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A lei não prevê que ele deixe de ser corregedor ao substituir o Presidente. As funções são cumulativas, sendo a de substituto exercida apenas quando necessário."
+            },
+            {
+                question: "A exigência de maioria dos votos no primeiro escrutínio para ser eleito Presidente refere-se à maioria dos votos válidos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. No direito eleitoral, a expressão 'maioria dos votos' (Art. 69, § 7º), quando não especificada (como absoluta ou qualificada), refere-se à maioria simples dos votos apurados (válidos), excluindo-se brancos e nulos."
+            },
+            {
+                question: "Um ministro titular ausente com causa justificada tem o direito de votar, mas não de ser votado.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A lei não estabelece nenhuma restrição à elegibilidade de ministros ausentes. O § 8º do Art. 69 garante o direito a 'tomar parte nas eleições', o que inclui tanto o direito de votar (capacidade eleitoral ativa) quanto o de ser votado (capacidade eleitoral passiva)."
+            },
+            {
+                question: "O rol de atribuições do Presidente do Tribunal de Contas da União, previsto no Art. 70, é taxativo, não podendo ser ampliado pelo Regimento Interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 70 estabelece que as competências são exercidas 'dentre outras atribuições estabelecidas no Regimento Interno', indicando que a lista é exemplificativa, e não taxativa."
+            },
+            {
+                question: "Compete ao Vice-Presidente do TCU dirigir o Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o inciso I do Art. 70, a competência para dirigir o Tribunal é do **Presidente**."
+            },
+            {
+                question: "A competência do Presidente para dar posse não se estende aos membros do Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 70 lista expressamente os 'membros do Ministério Público junto ao Tribunal' entre aqueles a quem o Presidente deve dar posse."
+            },
+            {
+                question: "Os atos de pessoal expedidos pelo Presidente, como nomeação e exoneração, devem ser publicados apenas no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 70 exige uma publicação dupla e obrigatória: 'no Diário Oficial da União **e** no Boletim do Tribunal'."
+            },
+            {
+                question: "A prática de atos de administração financeira e orçamentária pelo Presidente do TCU é uma atribuição indelegável.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 70 permite que o Presidente atue 'diretamente **ou por delegação**', conferindo expressamente a possibilidade de delegar tal competência."
+            },
+            {
+                question: "A direção do Tribunal é uma das atribuições do seu Presidente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do inciso I do Art. 70."
+            },
+            {
+                question: "O procedimento para a posse de novos ministros do TCU é detalhado na própria Lei Orgânica.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 70 determina que a posse ocorrerá 'na forma estabelecida no **Regimento Interno**'."
+            },
+            {
+                question: "A expedição de atos de remoção e dispensa de servidores da secretaria é competência do Presidente do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois 'remoção' e 'dispensa' são atos de pessoal listados no rol exemplificativo do inciso III do Art. 70."
+            },
+            {
+                question: "O Presidente do TCU tem competência para movimentar dotações e créditos orçamentários de outros Poderes para garantir o funcionamento do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 70 restringe a competência à movimentação de dotações e créditos orçamentários **próprios** do Tribunal."
+            },
+            {
+                question: "Compete ao Presidente do TCU dar posse aos dirigentes das unidades da secretaria do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois os 'dirigentes das unidades da secretaria' são um dos grupos listados no inciso II do Art. 70."
+            },
+            {
+                question: "A publicação dos atos de pessoal no Boletim do Tribunal é facultativa, sendo obrigatória apenas a publicação no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O uso da conjunção aditiva '**e**' no inciso III do Art. 70 indica que a publicação é obrigatória em ambos os veículos de comunicação."
+            },
+            {
+                question: "O Presidente do TCU pode delegar a competência para praticar atos de administração patrimonial necessários ao funcionamento do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso IV do Art. 70 menciona a possibilidade de atuação 'diretamente ou por delegação' para a prática de 'atos de administração financeira, orçamentária e **patrimonial**'."
+            },
+            {
+                question: "A competência para dar posse aos auditores do TCU é do Plenário do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o inciso II do Art. 70, a competência para dar posse aos auditores é do **Presidente** do Tribunal."
+            },
+            {
+                question: "A lista de atos de pessoal que o Presidente pode expedir, conforme o inciso III, é taxativa.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 70, após listar vários atos, inclui a expressão '**e outros atos** relativos aos servidores', o que torna o rol exemplificativo."
+            },
+            {
+                question: "A movimentação de dotações orçamentárias próprias do Tribunal pode ser feita diretamente pelo Presidente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso IV do Art. 70 estabelece que o Presidente pode atuar '**diretamente** ou por delegação'."
+            },
+            {
+                question: "As atribuições do Presidente do TCU, definidas no Art. 70, são as únicas que ele pode exercer.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 70 deixa claro que as atribuições listadas são exercidas 'dentre outras estabelecidas no Regimento Interno', indicando a existência de mais competências."
+            },
+            {
+                question: "O Presidente do Tribunal não tem competência para dar posse a si mesmo, sendo este um ato do Congresso Nacional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A posse dos **ministros** (incluindo o que virá a ser Presidente) é dada pelo Presidente do TCU em exercício, conforme o inciso II do Art. 70. A nomeação dos ministros é que é feita pelo Presidente da República, após aprovação do Senado Federal."
+            },
+            {
+                question: "A expedição do ato de aposentadoria de um servidor da secretaria do TCU é competência do Presidente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois a 'aposentadoria' está expressamente listada entre os atos de pessoal de competência do Presidente, no inciso III do Art. 70."
+            },
+            {
+                question: "A competência do Presidente para expedir atos de pessoal abrange apenas os servidores do quadro da secretaria, excluindo os membros do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso III do Art. 70 restringe a competência aos 'servidores do quadro de pessoal da secretaria', não se aplicando a ministros, auditores ou membros do MP, que possuem regime próprio."
+            },
+            {
+                question: "A prática de atos de administração financeira pelo Presidente é uma competência que pode ser exercida por delegação.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso IV do Art. 70 permite expressamente a delegação para a prática de 'atos de administração financeira'."
+            },
+            {
+                question: "A direção do Tribunal e a posse de novos ministros são atribuições do Presidente do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois combina duas competências previstas, respectivamente, nos incisos I e II do Art. 70."
+            },
+            {
+                question: "A publicação dos atos de pessoal pode ocorrer alternativamente no Diário Oficial da União ou no Boletim do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O uso da conjunção '**e**' no inciso III do Art. 70 indica que a publicação deve ser cumulativa, e não alternativa."
+            },
+            {
+                question: "Os atos de administração patrimonial do Tribunal são de competência exclusiva do Plenário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 70 atribui ao **Presidente** a competência para praticar os 'atos de administração (...) patrimonial necessários ao funcionamento do Tribunal'."
+            },
+            {
+                question: "Dar posse a auditores e expedir atos de nomeação de servidores da secretaria são competências do Presidente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, unindo uma competência do inciso II (dar posse a auditores) e uma do inciso III (expedir atos de nomeação)."
+            },
+            {
+                question: "A movimentação de créditos orçamentários próprios é uma atribuição do Presidente que não pode ser delegada.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 70 permite que o Presidente atue 'diretamente **ou por delegação**' ao movimentar as dotações e créditos."
+            },
+            {
+                question: "O Presidente do TCU não tem competência para expedir atos de admissão de servidores, apenas de nomeação.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 70 lista 'nomeação, **admissão**, exoneração...', incluindo expressamente a admissão."
+            },
+            {
+                question: "A forma de dar posse aos dirigentes das unidades da secretaria é estabelecida pelo Presidente no próprio ato de posse.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso II do Art. 70 determina que a posse será dada 'na forma estabelecida no **Regimento Interno**', seguindo um rito predefinido, e não a critério do Presidente no momento do ato."
+            },
+            {
+                question: "As atribuições do Presidente do TCU listadas no Art. 70 são consideradas um rol exemplificativo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A expressão '**dentre outras** atribuições estabelecidas no Regimento Interno', contida no caput do Art. 70, confere ao rol um caráter exemplificativo."
+            },
+            {
+                question: "Os atos de administração financeira, orçamentária e patrimonial são praticados pelo Presidente para garantir o funcionamento do próprio Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A parte final do inciso IV do Art. 70 estabelece que tais atos são 'necessários ao funcionamento do Tribunal'."
+            },
+            {
+                question: "A competência para dar posse a novos ministros e a competência para expedir atos de aposentadoria de servidores da secretaria pertencem a autoridades distintas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Ambas as competências, dar posse a ministros (inciso II) e expedir aposentadoria de servidores da secretaria (inciso III), são atribuídas à mesma autoridade: o **Presidente** do Tribunal."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

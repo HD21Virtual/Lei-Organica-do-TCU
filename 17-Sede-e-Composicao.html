@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sede e Composição</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Sede e Composição</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O Tribunal de Contas da União tem sua sede na capital federal, Brasília, e é composto por onze ministros.",
+                answer: "Errado",
+                rationale: "A assertiva contém dois erros. O Art. 62 especifica a sede como sendo no Distrito Federal (gênero, não a espécie Brasília) e, principalmente, estabelece a composição de nove ministros, e não onze."
+            },
+            {
+                question: "Em caso de ausência de um ministro, ele será substituído pelo membro mais antigo do Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 63 determina que a substituição de ministros ausentes ou impedidos será feita pelos auditores, e não por membros do Ministério Público."
+            },
+            {
+                question: "A convocação de um auditor para substituir um ministro ausente é um ato de competência do Presidente do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo exatamente ao procedimento previsto no caput do Art. 63, que atribui a convocação ao Presidente do Tribunal."
+            },
+            {
+                question: "O critério primário para a escolha do auditor que substituirá um ministro é a maior idade, sendo a antiguidade no cargo utilizada como critério de desempate.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao inverter a ordem dos critérios. Conforme o Art. 63, o critério primário é a ordem de antiguidade no cargo, sendo a maior idade utilizada como desempate ('no caso de idêntica antiguidade')."
+            },
+            {
+                question: "A convocação de auditores para substituir ministros com a finalidade de compor o quórum de uma sessão é permitida.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve a hipótese prevista no § 1º do Art. 63."
+            },
+            {
+                question: "Em caso de vacância do cargo de ministro, o Presidente do Tribunal convocará um auditor para ocupar o cargo de forma permanente.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 63 estabelece que o auditor exercerá as funções do cargo vago até novo provimento, indicando que a substituição é temporária, e não permanente."
+            },
+            {
+                question: "O Ministério Público é um órgão que integra a estrutura hierárquica do Tribunal de Contas da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 64 afirma que o Ministério Público 'funciona junto ao Tribunal', o que denota uma relação de cooperação e atuação conjunta, mas não de subordinação ou integração à estrutura do TCU."
+            },
+            {
+                question: "A Secretaria do TCU tem como finalidade exclusiva o apoio administrativo ao Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 65 estabelece que a secretaria atenderá às atividades de apoio técnico e administrativo, possuindo uma finalidade dupla."
+            },
+            {
+                question: "A sede do Tribunal de Contas da União é no Distrito Federal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do Art. 62."
+            },
+            {
+                question: "A substituição de um ministro por um auditor ocorre apenas nos casos de licença e férias.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 63 lista 'licença, férias ou outro afastamento legal', sendo o rol mais amplo do que o apresentado."
+            },
+            {
+                question: "Para que um auditor seja convocado para compor o quórum, é necessário que o ministro titular comunique sua ausência exclusivamente ao Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 63 permite que a comunicação da impossibilidade de comparecimento seja feita 'ao Presidente do Tribunal ou da Câmara respectiva'."
+            },
+            {
+                question: "A organização e as atribuições do Ministério Público que funciona junto ao TCU são definidas no Regimento Interno do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 64 remete a outros artigos da própria lei ('na forma estabelecida nos arts. 80 a 84 desta Lei'), e não ao Regimento Interno."
+            },
+            {
+                question: "A existência de uma secretaria de apoio técnico e administrativo é uma faculdade do Tribunal de Contas da União, podendo ser extinta a qualquer tempo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O verbo 'disporá' no Art. 65 tem sentido imperativo (terá à sua disposição), indicando a obrigatoriedade da existência da secretaria para o funcionamento do Tribunal."
+            },
+            {
+                question: "O Tribunal de Contas da União é composto por nove ministros.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo ao número exato de membros da Corte, conforme o Art. 62."
+            },
+            {
+                question: "A convocação de auditores para substituir ministros não se aplica em caso de impedimento, apenas em ausências por afastamento legal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 63 menciona expressamente 'em suas ausências e impedimentos', abrangendo ambas as situações."
+            },
+            {
+                question: "A ordem de antiguidade no cargo é o critério a ser observado para a convocação de auditor em caso de vacância de cargo de ministro.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 2º do Art. 63 determina que, no caso de vacância, será 'observado o critério estabelecido no caput deste artigo', que é a antiguidade (e a idade como desempate)."
+            },
+            {
+                question: "O Ministério Público que atua junto ao TCU é o mesmo que atua perante o Poder Judiciário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Ministério Público junto ao TCU é um ramo especializado do MPU, com estrutura e atribuições próprias (detalhadas nos arts. 80 a 84), distinto do Ministério Público Federal que atua na Justiça Federal, por exemplo."
+            },
+            {
+                question: "O apoio técnico a ser prestado pela secretaria do TCU é necessário ao exercício da competência do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois reflete a finalidade da secretaria, conforme descrito na parte final do Art. 65."
+            },
+            {
+                question: "Se dois auditores tiverem a mesma antiguidade no cargo, o critério de desempate para a substituição de um ministro será o de maior tempo de serviço público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O critério de desempate previsto na parte final do Art. 63 é o de 'maior idade', e não maior tempo de serviço público."
+            },
+            {
+                question: "A substituição de ministro por auditor para efeito de quórum depende de convocação do Presidente do Tribunal ou da Câmara respectiva.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Embora a comunicação da ausência possa ser feita ao Presidente da Câmara (§ 1º), a convocação do substituto, conforme o caput do Art. 63 (aplicável a todas as hipóteses), é um ato do Presidente do Tribunal."
+            },
+            {
+                question: "O auditor convocado para substituir ministro em caso de vacância exercerá as funções do cargo vago.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do § 2º do Art. 63, que diz que o auditor será convocado 'para exercer as funções inerentes ao cargo vago'."
+            },
+            {
+                question: "O TCU pode funcionar sem o Ministério Público, caso este se extinga.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A presença do Ministério Público junto ao Tribunal é um imperativo constitucional e legal (Art. 64), sendo parte essencial do modelo de controle externo brasileiro."
+            },
+            {
+                question: "A secretaria do TCU é responsável pelo apoio técnico, enquanto o apoio administrativo é de responsabilidade de um órgão externo.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 65 atribui à secretaria a responsabilidade por ambas as atividades de apoio: 'técnico e administrativo'."
+            },
+            {
+                question: "O TCU possui sede no Distrito Federal e representações em todos os estados da Federação.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 62 menciona apenas a sede no Distrito Federal. Embora o TCU possua secretarias de controle externo nos estados, a lei em questão não trata dessas unidades como parte da definição de sua sede ou estrutura principal."
+            },
+            {
+                question: "A convocação de um auditor para substituir um ministro é um ato discricionário do Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Diante da ausência ou impedimento de um ministro, a convocação é um ato vinculado, um dever do Presidente para garantir o funcionamento do colegiado. A discricionariedade não existe, pois a lei determina a substituição e o critério de escolha."
+            },
+            {
+                question: "Se um ministro se ausentar por motivo de férias, um auditor será convocado para substituí-lo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve uma das hipóteses literais de substituição previstas no caput do Art. 63."
+            },
+            {
+                question: "A comunicação de impossibilidade de comparecimento à sessão, para fins de substituição por quórum, deve ser feita com antecedência mínima de 24 horas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 63 não estabelece qualquer prazo mínimo de antecedência para a comunicação, apenas exige que ela seja feita."
+            },
+            {
+                question: "O auditor que substitui um ministro vago permanece no cargo por, no máximo, dois anos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 63 não estipula um prazo máximo, definindo a duração da substituição como 'até novo provimento' do cargo, o que é um prazo indeterminado."
+            },
+            {
+                question: "O apoio administrativo prestado pela secretaria é considerado necessário ao exercício da competência do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A parte final do Art. 65 classifica tanto as atividades de apoio técnico quanto as de apoio administrativo como 'necessárias ao exercício de sua competência'."
+            },
+            {
+                question: "A composição do TCU é de nove membros, sendo todos eles ministros.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, refletindo com precisão a informação contida no Art. 62."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditores</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Auditores</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "O quadro de auditores do Tribunal de Contas da União é composto por quatro membros, nomeados pelo Presidente do próprio Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva contém dois erros. O Art. 77 estabelece que os auditores são em número de três, e são nomeados pelo Presidente da República, e não pelo Presidente do TCU."
+            },
+            {
+                question: "O auditor, ao relatar um processo perante uma Câmara do TCU, vota juntamente com os ministros que a integram para formar a decisão.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta e toca no ponto central da função do auditor. O segundo parágrafo único (Art. 78) estabelece que o auditor relata os processos com proposta de decisão, a qual será votada pelos integrantes do Plenário ou da Câmara. O auditor, nessa função, propõe e relata, mas não vota."
+            },
+            {
+                question: "Um auditor do TCU, após ter sido empossado, somente poderá perder o cargo por meio de sentença judicial transitada em julgado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à garantia da vitaliciedade conferida aos auditores, conforme o caput do Art. 79."
+            },
+            {
+                question: "As mesmas vedações e restrições aplicáveis aos ministros do TCU, previstas nos artigos 74 e 76, aplicam-se também aos auditores.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde à literalidade do parágrafo único do Art. 79, que estende aos auditores o mesmo regime de impedimentos dos ministros."
+            },
+            {
+                question: "A nomeação para o cargo de auditor do TCU exige aprovação em concurso público de provas e títulos, observada a ordem de classificação.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve com precisão o método de seleção para o cargo de auditor, conforme o caput do Art. 77."
+            },
+            {
+                question: "O efetivo exercício por mais de dez anos em cargo da carreira de controle externo do TCU é um requisito obrigatório para a inscrição no concurso para auditor.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 77 define essa experiência como um 'título computável' no concurso, e não como um requisito para inscrição. Trata-se de um critério de classificação, não de habilitação."
+            },
+            {
+                question: "Quando não está substituindo um ministro, o auditor preside a instrução dos processos que lhe são distribuídos pelo Plenário ou pela Câmara.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à atribuição regular do auditor, conforme a primeira parte do segundo parágrafo único (Art. 78)."
+            },
+            {
+                question: "A garantia da vitaliciedade é adquirida pelo auditor a partir da sua aprovação no concurso público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 79 é claro ao condicionar a aquisição da vitaliciedade ao momento posterior à investidura no cargo: 'depois de empossado'."
+            },
+            {
+                question: "Os requisitos para o cargo de auditor do TCU são os mesmos exigidos para o cargo de ministro.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O caput do Art. 77 exige que os nomeados satisfaçam 'os requisitos exigidos para o cargo de ministro do Tribunal de Contas da União'."
+            },
+            {
+                question: "A proposta de decisão elaborada pelo auditor, ao relatar um processo, vincula o julgamento dos ministros do colegiado.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O texto refere-se a uma 'proposta de decisão', indicando que os ministros têm a liberdade de acatá-la ou rejeitá-la, não havendo vinculação."
+            },
+            {
+                question: "As restrições relativas a nepotismo, aplicáveis aos ministros, não se estendem aos auditores.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 79 estende aos auditores as vedações dos artigos 74 e 76, sendo o Art. 76 o que trata da incompatibilidade por parentesco (nepotismo)."
+            },
+            {
+                question: "O Tribunal de Contas da União possui um quadro de três auditores.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo ao número exato de auditores previsto no caput do Art. 77."
+            },
+            {
+                question: "A nomeação dos auditores pelo Presidente da República dispensa a observância da ordem de classificação no concurso público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 77 exige que seja 'observada a ordem de classificação'."
+            },
+            {
+                question: "O auditor relata os processos que lhe são distribuídos, mas a proposta de decisão é elaborada pela unidade técnica.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O segundo parágrafo único (Art. 78) afirma que o auditor relata os processos 'com proposta de decisão', indicando que ele mesmo a elabora."
+            },
+            {
+                question: "Um auditor do TCU, após empossado, não pode ser removido do cargo, em razão da garantia da inamovibilidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A lei não confere ao auditor a garantia da inamovibilidade, mas sim a da vitaliciedade (Art. 79), que o protege contra a perda do cargo, exceto por sentença judicial. A inamovibilidade, que protege contra a remoção, é garantia dos ministros."
+            },
+            {
+                question: "A experiência de mais de dez anos na carreira de controle externo do TCU, para fins do concurso de auditor, constitui um critério de desempate.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O parágrafo único do Art. 77 classifica essa experiência como 'título computável', ou seja, um item que agrega pontos na fase de títulos do concurso, e não apenas um critério de desempate."
+            },
+            {
+                question: "O auditor, quando não convocado para substituir ministro, atua como relator de processos tanto no Plenário quanto nas Câmaras.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O segundo parágrafo único (Art. 78) menciona que a proposta de decisão será votada 'pelos integrantes do Plenário ou da Câmara para a qual estiver designado'."
+            },
+            {
+                question: "Um auditor do TCU não pode exercer outra função pública, ainda que em disponibilidade, salvo uma de magistério.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Essa é uma das vedações do Art. 74, que, conforme o parágrafo único do Art. 79, aplica-se integralmente aos auditores."
+            },
+            {
+                question: "A nomeação dos auditores é feita pelo Presidente da República, mas a escolha se dá a partir de uma lista tríplice formada pelo Plenário do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao descrever o procedimento de forma equivocada. O Art. 77 estabelece que a seleção é feita por concurso público, e não por lista tríplice, que é um método usado para a escolha de alguns ministros."
+            },
+            {
+                question: "O auditor, na sua função regular, preside a instrução processual e, ao final, relata o processo.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve as duas principais atribuições do auditor quando não está em substituição, conforme o segundo parágrafo único (Art. 78)."
+            },
+            {
+                question: "Um auditor que celebrar contrato com uma empresa pública, mesmo que o contrato obedeça a normas uniformes, estará violando suas vedações.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A vedação do Art. 74, V (aplicável aos auditores), contém uma exceção expressa para contratos que obedecem a normas uniformes para todo e qualquer contratante."
+            },
+            {
+                question: "Os candidatos ao cargo de auditor devem possuir, entre outros requisitos, mais de trinta e cinco e menos de sessenta e cinco anos de idade.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Como os requisitos para auditor são os mesmos para ministro (Art. 77), a faixa etária prevista no Art. 71 também se aplica."
+            },
+            {
+                question: "A proposta de decisão apresentada por um auditor deve ser, obrigatoriamente, votada pelo colegiado, não podendo o Relator do acórdão modificá-la.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O auditor atua como relator do processo, mas a decisão final é dos ministros. O ministro que preside a sessão ou outro membro do colegiado pode propor uma visão divergente, que será votada. A proposta do auditor não é imutável."
+            },
+            {
+                question: "A perda do cargo de auditor por sentença judicial transitada em julgado é uma exceção à garantia da vitaliciedade.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A vitaliciedade, conforme o Art. 79, não é uma garantia absoluta, pois cede diante de uma condenação judicial definitiva."
+            },
+            {
+                question: "O concurso público para auditor do TCU é apenas de provas, não incluindo avaliação de títulos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 77 é explícito ao mencionar 'concurso público de provas e títulos'."
+            },
+            {
+                question: "A distribuição dos processos aos auditores é feita pelo Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A lei não especifica quem realiza a distribuição. Essa matéria é tipicamente tratada no Regimento Interno, que define os critérios de distribuição (sorteio, especialização, etc.). A lei não atribui essa função ao Presidente."
+            },
+            {
+                question: "A vedação de dedicar-se à atividade político-partidária aplica-se aos auditores do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Essa é uma das proibições do Art. 74 (inciso VI), estendida aos auditores pelo parágrafo único do Art. 79."
+            },
+            {
+                question: "A nomeação dos três auditores do TCU é um ato de competência exclusiva do Presidente da República.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois o Art. 77 atribui a nomeação unicamente ao Presidente da República, após o resultado do concurso público."
+            },
+            {
+                question: "O auditor, ao relatar um processo, está vinculado às conclusões da unidade técnica, devendo sua proposta de decisão refletir o parecer técnico.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O auditor, assim como o ministro-relator, possui independência funcional para formar seu convencimento, podendo concordar ou discordar, de forma fundamentada, das propostas das unidades técnicas. A lei não estabelece essa vinculação."
+            },
+            {
+                question: "A garantia da vitaliciedade do auditor é idêntica àquela conferida aos ministros do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A redação do caput do Art. 79 ('só perderá o cargo por sentença judicial transitada em julgado') é praticamente idêntica à garantia de vitaliciedade dos ministros prevista no Art. 73, § único, I."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disposições Gerais e Transitórias</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Disposições Gerais e Transitórias</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 90</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A fiscalização das atividades do Tribunal de Contas da União é exercida pelo próprio Tribunal, em um sistema de autocontrole.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 90 estabelece que a fiscalização do TCU será exercida pelo Congresso Nacional, configurando o controle externo do controlador."
+            },
+            {
+                question: "O Tribunal de Contas da União encaminhará ao Congresso Nacional, semestral e anualmente, relatório de suas atividades.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto à periodicidade. O § 1º do Art. 90 determina que o envio de relatórios será trimestral e anualmente."
+            },
+            {
+                question: "O Tribunal de Contas da União enviará à Justiça Eleitoral o nome dos responsáveis cujas contas foram julgadas irregulares nos últimos oito anos.",
+                answer: "Errado",
+                rationale: "A assertiva contém dois erros. Conforme o Art. 91, a lista é enviada ao Ministério Público Eleitoral (e não à Justiça Eleitoral), e o período considerado é o dos cinco anos imediatamente anteriores à eleição, não oito."
+            },
+            {
+                question: "Ao examinar despesas de natureza reservada, o Tribunal deverá, obrigatoriamente, ordenar a verificação in loco dos comprovantes.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 92 utiliza o verbo 'poderá', indicando que a verificação in loco é uma faculdade (ato discricionário) do Tribunal, e não uma obrigação."
+            },
+            {
+                question: "Com o objetivo de economia processual, o Tribunal pode determinar o arquivamento de um processo com o consequente cancelamento do débito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta e toca no ponto principal do Art. 93. O arquivamento por racionalização administrativa ocorre sem cancelamento do débito. O devedor continua obrigado ao pagamento para que possa obter a quitação."
+            },
+            {
+                question: "A vedação de intervir em processo por motivo de parentesco aplica-se a ministros e auditores, mas não aos membros do Ministério Público junto ao Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 94 inclui expressamente os 'ministros, auditores e membro do Ministério Público junto ao Tribunal' na regra de impedimento."
+            },
+            {
+                question: "O prazo para posse de um novo ministro do TCU é de sessenta dias, prorrogável por mais trinta, mediante solicitação escrita.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao inverter os prazos. O Art. 95 estabelece um prazo inicial de trinta dias, prorrogável por mais sessenta dias, no máximo."
+            },
+            {
+                question: "As atas das sessões do Tribunal de Contas da União são publicadas de forma resumida no Diário Oficial da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 96 determina que as atas serão publicadas 'na íntegra'."
+            },
+            {
+                question: "O Boletim do Tribunal de Contas da União é considerado órgão oficial.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do Art. 98."
+            },
+            {
+                question: "A aprovação e a alteração do Regimento Interno do TCU exigem o voto da maioria simples de seus ministros titulares.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 99 exige um quórum qualificado de deliberação da maioria absoluta de seus ministros titulares."
+            },
+            {
+                question: "O Tribunal de Contas da União poderá firmar acordos de cooperação com Tribunais de Contas dos Estados, mas não com os dos Municípios.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 100 autoriza a cooperação com 'Tribunais de Contas dos Estados, do Distrito Federal, dos Municípios, ou dos Conselhos ou Tribunais de Contas dos Municípios'."
+            },
+            {
+                question: "A requisição de serviços técnicos especializados a outros órgãos federais pelo TCU gera ônus para o Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 101 estabelece que a requisição se dará 'sem quaisquer ônus' para o Tribunal."
+            },
+            {
+                question: "A análise da evolução da eficiência, eficácia e economicidade do controle deve constar no relatório anual de atividades do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao conteúdo obrigatório do relatório anual, conforme o § 2º do Art. 90."
+            },
+            {
+                question: "A lista de responsáveis com contas irregulares é enviada pelo TCU ao Ministério Público Eleitoral em tempo hábil para subsidiar ações de improbidade administrativa.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto à finalidade. O Art. 91 especifica que o envio da lista tem a finalidade prevista na Lei Complementar nº 64/1990 (Lei de Inelegibilidades), e não para subsidiar ações de improbidade."
+            },
+            {
+                question: "O arquivamento do processo por racionalização administrativa impede que o devedor obtenha a quitação do débito.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Pelo contrário, o Art. 93 afirma que o devedor 'continuará obrigado' ao pagamento, sendo este o único meio 'para que lhe possa ser dada quitação'."
+            },
+            {
+                question: "O impedimento por parentesco se estende até o terceiro grau na linha colateral.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 94 limita o impedimento por parentesco, na linha reta ou colateral, até o segundo grau."
+            },
+            {
+                question: "A prorrogação do prazo para posse de um novo auditor do TCU é automática.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 95 condiciona a prorrogação à 'solicitação escrita' do interessado."
+            },
+            {
+                question: "As publicações editadas pelo Tribunal de Contas da União são aquelas definidas no seu Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do Art. 97."
+            },
+            {
+                question: "A alteração do Regimento Interno do TCU pode ser feita por decisão do Presidente do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 99 exige deliberação do colegiado por maioria absoluta de seus ministros titulares."
+            },
+            {
+                question: "A cooperação entre o TCU e outros Tribunais de Contas é uma obrigação legal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 100 utiliza o verbo 'poderá', indicando que a celebração de acordos de cooperação é uma faculdade, e não uma obrigação."
+            },
+            {
+                question: "A sanção pelo não cumprimento de uma requisição de serviços técnicos feita pelo TCU é a aplicação da multa prevista no art. 58 desta Lei.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo à consequência prevista na parte final do Art. 101."
+            },
+            {
+                question: "O TCU deve enviar a lista de responsáveis com contas irregulares ao Ministério Público Eleitoral apenas nos anos em que ocorrem eleições gerais.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 91 determina o envio da lista antes 'de cada eleição', o que abrange tanto as eleições gerais quanto as municipais."
+            },
+            {
+                question: "O exame de despesas de natureza reservada pelo TCU será feito com o mesmo caráter sigiloso.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 92 estabelece que os atos 'serão, com esse caráter, examinados pelo Tribunal'."
+            },
+            {
+                question: "A vedação de intervenção em processo por interesse de cônjuge aplica-se aos ministros, auditores e membros do Ministério Público junto ao TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois o Art. 94 menciona os três cargos e inclui o interesse de 'cônjuge' como causa de impedimento."
+            },
+            {
+                question: "O prazo para posse de um membro do Ministério Público junto ao Tribunal começa a contar da sua aprovação no concurso público.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 95 estabelece que o prazo de trinta dias se conta 'a partir da publicação do ato de nomeação no Diário Oficial da União'."
+            },
+            {
+                question: "A publicação das atas das sessões do TCU no Diário Oficial da União é gratuita.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 96 determina que a publicação será 'sem ônus'."
+            },
+            {
+                question: "O Regimento Interno do TCU pode ser alterado por maioria simples, caso a sessão conte com a presença de todos os ministros.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O quórum para alteração do Regimento Interno é sempre o de maioria absoluta dos ministros titulares (no mínimo, 5 votos), conforme o Art. 99, independentemente do número de presentes."
+            },
+            {
+                question: "O TCU pode requisitar serviços técnicos especializados a órgãos e entidades estaduais.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 101 restringe a requisição 'aos órgãos e entidades federais'."
+            },
+            {
+                question: "O relatório anual do TCU deve conter uma análise sobre a evolução dos custos de controle.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois corresponde a um dos elementos obrigatórios do relatório anual, conforme o § 2º do Art. 90."
+            },
+            {
+                question: "Um processo arquivado com base na economia processual, conforme o Art. 93, poderá ser reaberto a qualquer tempo para fins de cobrança.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Como o débito não é cancelado, ele não prescreve (conforme entendimento do STF sobre ressarcimento ao erário) e o devedor continua obrigado ao pagamento. O arquivamento é uma medida de gestão processual, não extinguindo o direito de cobrança."
+            },
+            {
+                question: "A relação das populações dos municípios, para os fins previstos na Lei Orgânica do TCU, deve ser publicada no Diário Oficial da União pela entidade competente do Poder Executivo federal até 31 de dezembro de cada ano.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto ao prazo. Conforme o inciso II do Art. 102, o prazo para a publicação da relação das populações dos Municípios é até 31 de agosto de cada ano. O prazo de 31 de dezembro (inciso I) refere-se aos Estados e ao Distrito Federal."
+            },
+            {
+                question: "Em caso de criação de um novo Estado a ser implantado no exercício subsequente, uma nova comunicação da relação das populações deverá ser feita.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à hipótese prevista no § 3º do Art. 102."
+            },
+            {
+                question: "Compete ao Tribunal de Contas da União examinar e julgar o endividamento externo brasileiro.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o Art. 103, a competência do TCU é de prestar auxílio à comissão mista do Congresso Nacional incumbida desse exame, e não de examinar e julgar diretamente a matéria."
+            },
+            {
+                question: "Os ordenadores de despesas dos órgãos da administração direta devem remeter, anualmente e de ofício, cópia de suas declarações de bens e rendimentos ao TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta e contém a principal 'pegadinha' do Art. 104. A remessa das declarações não é um ato anual e de ofício, mas ocorre 'por solicitação do Plenário ou de suas Câmaras'."
+            },
+            {
+                question: "O sigilo sobre as declarações de bens e rendimentos dos gestores, mantido pelo TCU, pode ser quebrado por decisão de qualquer uma de suas Câmaras.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 104 estabelece que a quebra de sigilo só pode ocorrer por decisão do Plenário, não das Câmaras."
+            },
+            {
+                question: "A quebra de sigilo das declarações de bens sem autorização do Plenário constitui infração funcional punível com demissão.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 3º do Art. 104 classifica o ato como infração funcional e remete ao Art. 132, inciso IX, da Lei nº 8.112/1990, que prevê a pena de demissão para a violação de sigilo."
+            },
+            {
+                question: "Conforme a regra de transição pós-Constituição de 1988, a primeira, a segunda e a terceira vagas para ministro do TCU são de escolha do Presidente da República.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme os incisos I e II do Art. 105, a primeira vaga é do Presidente, mas a segunda e a terceira são do Congresso Nacional."
+            },
+            {
+                question: "A quarta vaga de ministro do TCU, de escolha do Presidente da República, deve recair em auditor do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso I do Art. 105 determina que, na primeira, quarta e sétima vagas (do Presidente), as duas últimas (quarta e sétima) devem recair, respectivamente, em auditor e membro do Ministério Público."
+            },
+            {
+                question: "A publicação da relação das populações dos Estados e do Distrito Federal deve ocorrer até 31 de agosto de cada ano.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O prazo de 31 de agosto (inciso II do Art. 102) é para os Municípios. Para os Estados e o Distrito Federal, o prazo é até 31 de dezembro (inciso I)."
+            },
+            {
+                question: "O auxílio prestado pelo TCU na análise do endividamento externo é direcionado à comissão mista de orçamento do Congresso Nacional.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 103 especifica que o auxílio é prestado 'à comissão mista do Congresso Nacional incumbida do exame do endividamento externo brasileiro', que é uma comissão específica, e não a comissão mista de orçamento."
+            },
+            {
+                question: "Dirigentes de fundações e quaisquer servidores responsáveis por atos de despesa pública estão obrigados a remeter suas declarações de bens ao TCU, quando solicitados.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao rol de responsáveis listados no caput do Art. 104."
+            },
+            {
+                question: "O descumprimento da obrigação de enviar a declaração de bens, quando solicitado, sujeitará o responsável à multa prevista no art. 58 da lei.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve a consequência prevista na primeira parte do § 1º do Art. 104."
+            },
+            {
+                question: "O TCU pode solicitar esclarecimentos sobre a variação patrimonial dos declarantes.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo à faculdade conferida ao Tribunal na parte final do § 1º do Art. 104."
+            },
+            {
+                question: "O sigilo das declarações de bens só pode ser quebrado se houver processo comprovando enriquecimento ilícito do declarante.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve a condição material para a quebra do sigilo, conforme o § 2º do Art. 104: 'processo no qual fique comprovado enriquecimento ilícito'."
+            },
+            {
+                question: "A obrigação de apresentar a declaração de bens aplica-se também a Ministros de Estado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois é a determinação expressa do § 4º do Art. 104, que remete à autoridade do Art. 52 (Ministro de Estado)."
+            },
+            {
+                question: "A nona vaga de ministro do TCU, conforme a regra de transição, é de competência de escolha do Congresso Nacional.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A nona vaga está incluída no rol do inciso II do Art. 105, que atribui a escolha ao Congresso Nacional."
+            },
+            {
+                question: "A partir da décima vaga, o processo de escolha de ministros é reiniciado, observando-se a alternância.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à regra de continuidade do ciclo de nomeações, prevista no inciso III do Art. 105."
+            },
+            {
+                question: "A publicação da relação de populações é feita pelo próprio Tribunal de Contas da União.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 102 atribui a responsabilidade pela publicação a uma 'Entidade competente do Poder Executivo federal'."
+            },
+            {
+                question: "O auxílio do TCU na questão do endividamento externo é uma competência definida pela própria Lei Orgânica do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 103 estabelece que o auxílio se dará 'nos termos do art. 26 do Ato das Disposições Constitucionais Transitórias', indicando que a competência tem fundamento direto na Constituição."
+            },
+            {
+                question: "A solicitação para que um gestor envie sua declaração de bens pode partir tanto do Plenário quanto de uma das Câmaras do TCU.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois o caput do Art. 104 legitima 'o Plenário ou de suas Câmaras' para fazer a solicitação."
+            },
+            {
+                question: "O sigilo das declarações de bens apresentadas ao TCU é absoluto e não pode ser quebrado em nenhuma hipótese.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O sigilo não é absoluto, pois o § 2º do Art. 104 prevê expressamente a possibilidade de sua quebra por decisão do Plenário em caso de enriquecimento ilícito."
+            },
+            {
+                question: "A sétima vaga de ministro do TCU, de escolha do Presidente da República, deve recair em membro do Ministério Público junto ao Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso I do Art. 105 determina que, na quarta e sétima vagas, a escolha recairá, respectivamente, em auditor e membro do Ministério Público."
+            },
+            {
+                question: "A nova comunicação de populações, em caso de criação de novo município, é facultativa.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 3º do Art. 102 utiliza a forma verbal 'Far-se-á', que é imperativa, indicando a obrigatoriedade da nova comunicação."
+            },
+            {
+                question: "O TCU manterá em sigilo o conteúdo das declarações de bens e rendimentos apresentadas.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao dever imposto ao Tribunal pelo § 1º do Art. 104."
+            },
+            {
+                question: "O sigilo das declarações de bens pode ser quebrado por requerimento de qualquer autoridade do Poder Judiciário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A quebra de sigilo, no âmbito do TCU, é um ato interna corporis, que depende de 'decisão do Plenário' do próprio Tribunal, conforme o § 2º do Art. 104."
+            },
+            {
+                question: "A quinta e a sexta vagas para ministro do TCU são de escolha do Presidente da República.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o inciso II do Art. 105, a quinta e a sexta vagas são de competência de escolha do Congresso Nacional."
+            },
+            {
+                question: "A regra de alternância para a escolha de auditor e membro do Ministério Público, nas vagas do Presidente, continua a ser observada após a nona vaga.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O inciso III do Art. 105 determina que, ao reiniciar o processo, será 'observada a alternância quanto à escolha de auditor e membro do Ministério Público'."
+            },
+            {
+                question: "A remessa das declarações de bens ao TCU é uma obrigação que se aplica a todos os servidores públicos federais.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao generalizar. O Art. 104 restringe a obrigação (quando solicitada) aos 'ordenadores de despesas', 'dirigentes' e 'quaisquer servidores responsáveis por atos de que resulte despesa pública', e não a todos os servidores."
+            },
+            {
+                question: "A quebra de sigilo de uma declaração de bens por um servidor sem autorização do Plenário constitui crime de responsabilidade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto à capitulação da infração. O § 3º do Art. 104 define o ato como 'infração funcional punível na forma da Lei n° 8.112/1990', o que é diferente de crime de responsabilidade."
+            },
+            {
+                question: "A segunda vaga de ministro do TCU, conforme a regra de transição, é de competência de escolha do Congresso Nacional.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A segunda vaga está incluída no rol do inciso II do Art. 105, que atribui a escolha ao Congresso Nacional."
+            },
+            {
+                question: "A regra que exige mais de cinco anos de exercício no cargo para que ministros do TCU se aposentem com as vantagens plenas aplica-se a todos, sem exceção, desde a promulgação da Constituição de 1988.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 106 estabelece uma regra de transição, excepcionalizando da exigência de cinco anos os ministros que, na data da promulgação da CF/88, já preenchiam os requisitos para a aposentadoria com as vantagens do cargo."
+            },
+            {
+                question: "A distribuição dos processos no âmbito do Tribunal de Contas da União observará os princípios da publicidade, da alternatividade e da isonomia.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta ao substituir um dos princípios. O Art. 107 elenca os princípios da publicidade, da alternatividade e do sorteio, e não o da isonomia."
+            },
+            {
+                question: "Todas as sessões do Tribunal de Contas da União, sejam ordinárias ou extraordinárias, são públicas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Enquanto o caput do Art. 108 estabelece a publicidade das sessões ordinárias, o § 1º do mesmo artigo prevê a possibilidade de realização de sessões extraordinárias de caráter reservado."
+            },
+            {
+                question: "O Tribunal de Contas da União ajustará o exame dos processos em curso às disposições desta Lei.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade do Art. 109, que trata da aplicação imediata da lei aos processos em andamento."
+            },
+            {
+                question: "A investidura em cargo no quadro do TCU depende de prévia aprovação em concurso público, sendo dispensável a participação em curso de formação.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso III do Art. 110 estabelece uma dupla condição: aprovação em concurso público bem como em cursos de formação, tornando ambas as etapas indispensáveis."
+            },
+            {
+                question: "É vedada a nomeação para cargo em comissão de parentes de até o segundo grau de ministros em atividade.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto ao grau de parentesco. O parágrafo único do Art. 110 estende a vedação de nepotismo até o terceiro grau, e não apenas até o segundo."
+            },
+            {
+                question: "Com a vigência da lei, os cargos de subprocurador-geral junto ao TCU foram imediatamente extintos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 111 estabelece que os cargos 'integrarão quadro em extinção', o que significa que eles continuam a existir até a vacância, não sendo extintos de imediato."
+            },
+            {
+                question: "A distribuição dos processos no TCU observará os princípios do sorteio e da alternatividade.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois menciona dois dos três princípios listados no Art. 107."
+            },
+            {
+                question: "Uma sessão extraordinária de caráter reservado pode ser realizada para tratar de assuntos de natureza administrativa interna do Tribunal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das hipóteses para a realização de sessão reservada, conforme o § 1º do Art. 108."
+            },
+            {
+                question: "Em uma sessão extraordinária de caráter reservado, os advogados das partes envolvidas têm o direito de consultar os autos e pedir cópias de peças processuais.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois descreve as prerrogativas asseguradas aos advogados das partes, caso desejem participar da sessão, conforme o § 2º do Art. 108."
+            },
+            {
+                question: "A presença de representante do Ministério Público é obrigatória em qualquer sessão extraordinária de caráter reservado.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à exigência literal do § 3º do Art. 108."
+            },
+            {
+                question: "O projeto de lei sobre o quadro de pessoal do TCU, a ser encaminhado ao Congresso Nacional, deveria prever o regime celetista para os servidores.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso I do Art. 110 estabelece como diretriz o regime jurídico único, que, no âmbito federal, corresponde ao regime estatutário (Lei nº 8.112/90), e não ao celetista."
+            },
+            {
+                question: "O provimento de cargos em comissão nos gabinetes dos ministros deve ser feito, em regra, por servidores do quadro de pessoal do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A regra geral do inciso IV do Art. 110 é o provimento por servidores de carreira, mas os Gabinetes de Ministro (assim como de Procurador-Geral e Auditor, para alguns cargos) são a exceção, permitindo a livre escolha da autoridade."
+            },
+            {
+                question: "É vedada a nomeação para função de confiança de cônjuge de ministro aposentado há mais de cinco anos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A restrição de nepotismo para parentes de membros aposentados, prevista no parágrafo único do Art. 110, aplica-se apenas àqueles 'aposentados há menos de cinco anos'."
+            },
+            {
+                question: "Os direitos e vedações aplicáveis aos titulares dos cargos de subprocurador-geral em extinção foram assegurados.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à parte final do Art. 111."
+            },
+            {
+                question: "A distribuição de processos no TCU observará o princípio da publicidade.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois a publicidade é o primeiro dos princípios listados no Art. 107."
+            },
+            {
+                question: "As sessões ordinárias do TCU poderão, a critério do Presidente, ter caráter reservado.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O caput do Art. 108 estabelece que as sessões ordinárias serão públicas. O caráter reservado é uma possibilidade apenas para as sessões extraordinárias (§ 1º)."
+            },
+            {
+                question: "A participação dos advogados das partes em sessões extraordinárias de caráter reservado é obrigatória.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 108 condiciona a participação das partes a um ato de vontade: 'se assim desejarem seus advogados'."
+            },
+            {
+                question: "A lei nova do TCU aplica-se apenas aos processos iniciados após a sua vigência, não afetando os processos em curso.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 109 determina que o Tribunal 'ajustará o exame dos processos em curso às disposições desta Lei', estabelecendo sua aplicação imediata."
+            },
+            {
+                question: "O Tribunal tem competência para transformar e reclassificar os cargos em comissão e as funções de confiança de sua secretaria.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das competências listadas no inciso V, alínea 'b', do Art. 110."
+            },
+            {
+                question: "A nomeação de um servidor concursado para um cargo em comissão no gabinete de um ministro é permitida.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A exceção à vedação de nepotismo, prevista no parágrafo único do Art. 110, permite a nomeação de parentes 'se admitidos no quadro próprio de pessoal mediante concurso público'."
+            },
+            {
+                question: "A regra de transição sobre a aposentadoria de ministros do TCU, prevista no Art. 106, beneficia apenas aqueles que já estavam aposentados em 1988.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O benefício se aplica aos ministros que, na data da promulgação da CF/88, já preenchiam os requisitos para a aposentadoria, mesmo que ainda estivessem na ativa."
+            },
+            {
+                question: "A presença de representante do Ministério Público é facultativa nas sessões ordinárias do Tribunal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Embora o Art. 108, § 3º, trate especificamente da obrigatoriedade em sessões reservadas, o Art. 81, II (de outra seção) estabelece o dever de o Procurador-Geral 'comparecer às sessões', sendo sua audiência obrigatória em diversos processos de mérito, o que torna sua presença uma regra. A afirmação de que é facultativa é, portanto, falsa."
+            },
+            {
+                question: "O projeto de lei sobre o quadro de pessoal do TCU deveria ser encaminhado ao Congresso Nacional em até 90 dias da entrada em vigor da lei.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde ao prazo estabelecido no caput do Art. 110."
+            },
+            {
+                question: "A remuneração dos servidores do TCU deve observar, entre outros parâmetros, os níveis de remuneração adotados para os servidores do Poder Judiciário.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso VI do Art. 110 estabelece que os níveis de remuneração a serem observados como paradigma são os 'adotados para os servidores do Poder Legislativo'."
+            },
+            {
+                question: "A vedação de nepotismo no TCU se aplica a parentes em linha reta, sem limite de grau.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O parágrafo único do Art. 110 estabelece a vedação para parentes 'em linha reta ou colateral, até o terceiro grau'. Na linha reta (pais, filhos, avós, netos), o parentesco não tem limite de grau, e todos estão abrangidos pela regra."
+            },
+            {
+                question: "Os cargos de subprocurador-geral, por integrarem quadro em extinção, tiveram suas vedações legais revogadas.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. A parte final do Art. 111 determina que serão 'assegurados os direitos e observadas as vedações aplicáveis a seus titulares'."
+            },
+            {
+                question: "A investidura em cargo ou emprego no TCU exige aprovação tanto em concurso público quanto em curso de formação.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e descreve a dupla exigência estabelecida no inciso III do Art. 110."
+            },
+            {
+                question: "Os cargos de Oficial de Gabinete e Assistente nos gabinetes de ministros, auditores e do Procurador-Geral são de provimento restrito a servidores do quadro de pessoal.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O inciso IV do Art. 110 estabelece justamente a exceção para esses cargos, que 'serão de livre escolha da autoridade'."
+            },
+            {
+                question: "A vedação de nepotismo no TCU aplica-se a parentes de ministros aposentados há menos de cinco anos.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde a uma das hipóteses expressas no parágrafo único do Art. 110."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>

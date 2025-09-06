@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plenário e Câmaras</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --primary-color: #005a9c;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --neutral-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        .quiz-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .quiz-header p {
+            margin: 5px 0 0;
+            color: var(--neutral-color);
+        }
+        #question-number {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        #question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: justify;
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid var(--primary-color);
+        }
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--secondary-bg);
+            color: var(--primary-color);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: var(--secondary-bg);
+            border-color: var(--primary-color);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+        .btn.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .btn.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        #feedback {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            line-height: 1.5;
+        }
+        #feedback.correct-feedback {
+            background-color: #e9f6ec;
+            border-left: 5px solid var(--correct-color);
+            color: #1e4620;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #fdecea;
+            border-left: 5px solid var(--incorrect-color);
+            color: #5c1a1a;
+        }
+        .navigation {
+            text-align: right;
+        }
+        #next-btn, #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #results-container {
+            text-align: center;
+        }
+        #results-container h2 {
+            color: var(--primary-color);
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Lei Orgânica do TCU</h1>
+            <p>Plenário e Câmaras</p>
+        </div>
+
+        <div id="quiz-body">
+            <p><span id="question-number"></span> de 30</p>
+            <div id="question-text"></div>
+            <div class="answer-options">
+                <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
+                <button class="btn" id="btn-errado" onclick="selectAnswer('Errado')">Errado</button>
+            </div>
+            <div id="feedback"></div>
+            <div class="navigation">
+                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+            </div>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Caderno Concluído!</h2>
+            <p id="score"></p>
+            <p id="score-message"></p>
+            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A competência e o funcionamento do Plenário do Tribunal de Contas da União são regulados exclusivamente por seu Regimento Interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 66 estabelece que o Plenário terá sua competência e funcionamento regulados nesta Lei e no seu Regimento Interno, indicando uma dupla fonte normativa."
+            },
+            {
+                question: "O Plenário do Tribunal de Contas da União é dirigido por seu Vice-Presidente.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o Art. 66, o Plenário é dirigido por seu Presidente."
+            },
+            {
+                question: "O Tribunal de Contas da União é obrigado a se dividir em Câmaras para otimizar seus trabalhos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 67 utiliza o verbo 'poderá', indicando que a divisão em Câmaras é uma faculdade (ato discricionário) do Tribunal, e não uma obrigação."
+            },
+            {
+                question: "A decisão de dividir o Tribunal em Câmaras exige a deliberação da maioria absoluta de seus ministros titulares.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, correspondendo exatamente ao quórum qualificado e ao colégio deliberativo exigidos pelo caput do Art. 67."
+            },
+            {
+                question: "As Câmaras do TCU podem deliberar sobre matéria da competência privativa do Plenário em casos de urgência.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 67 estabelece uma vedação absoluta, afirmando que não será objeto de deliberação das Câmaras a matéria de competência privativa do Plenário, sem prever exceções."
+            },
+            {
+                question: "A definição da matéria de competência privativa do Plenário é feita na própria Lei Orgânica do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 1º do Art. 67 determina que a matéria de competência privativa do Plenário será 'definida no Regimento Interno'."
+            },
+            {
+                question: "O número e a composição das Câmaras do TCU são regulados no Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 2º do Art. 67 lista expressamente o 'número' e a 'composição' das Câmaras como matérias a serem reguladas no Regimento Interno."
+            },
+            {
+                question: "O recesso fixado pelo Tribunal de Contas da União implica a interrupção total de seus trabalhos.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta e contradiz diretamente a parte final do Art. 68, que estabelece que o recesso deve ser fixado 'sem ocasionar a interrupção de seus trabalhos'. Esta é uma 'pegadinha' clássica."
+            },
+            {
+                question: "Compete ao Tribunal fixar, no Regimento Interno, os períodos de funcionamento das sessões do Plenário e das Câmaras.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à literalidade da primeira parte do Art. 68."
+            },
+            {
+                question: "A competência do Plenário do TCU é regulada tanto pela Lei Orgânica quanto pelo seu Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, refletindo a dupla fonte normativa para a regulação da competência do Plenário, conforme o Art. 66."
+            },
+            {
+                question: "A criação de Câmaras no TCU depende de deliberação da maioria simples dos ministros presentes na sessão.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 67 exige um quórum qualificado de deliberação da maioria absoluta de seus ministros titulares."
+            },
+            {
+                question: "A presidência e o funcionamento das Câmaras são matérias reguladas na própria Lei Orgânica do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. Conforme o § 2º do Art. 67, a presidência e o funcionamento das Câmaras 'serão regulados no Regimento Interno'."
+            },
+            {
+                question: "O Tribunal pode definir o período de recesso que julgar conveniente.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois o Art. 68 confere ao Tribunal a prerrogativa de fixar 'o recesso que entender conveniente', indicando um ato de discricionariedade."
+            },
+            {
+                question: "O Plenário do TCU é dirigido por seu Presidente, conforme estabelecido no Regimento Interno.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta quanto à fonte da norma. Embora o Regimento Interno possa detalhar a atribuição, a determinação de que o Plenário é dirigido pelo Presidente está expressa no caput do Art. 66 da própria Lei."
+            },
+            {
+                question: "Matérias de competência privativa do Plenário não podem ser delegadas às Câmaras.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e é a consequência lógica da vedação imposta pelo § 1º do Art. 67."
+            },
+            {
+                question: "A competência das Câmaras é definida na própria Lei Orgânica do TCU.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O § 2º do Art. 67 é explícito ao determinar que a 'competência (...) das Câmaras' será regulada no Regimento Interno."
+            },
+            {
+                question: "O período de funcionamento das sessões do Plenário é fixado por Portaria da Presidência.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 68 estabelece que o Tribunal fixará os períodos de funcionamento 'no Regimento Interno'."
+            },
+            {
+                question: "A existência de Câmaras no TCU é permanente e obrigatória por força de lei.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 67 estabelece que o Tribunal poderá dividir-se em Câmaras, indicando que a existência delas depende de uma deliberação do próprio colegiado, sendo, portanto, facultativa."
+            },
+            {
+                question: "O Regimento Interno define quais matérias são de competência exclusiva do Plenário.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e corresponde à determinação da parte final do § 1º do Art. 67."
+            },
+            {
+                question: "O Tribunal deve garantir a continuidade de seus trabalhos mesmo durante o período de recesso.",
+                answer: "Certo",
+                rationale: "A assertiva está correta e reflete a condição imposta pela parte final do Art. 68."
+            },
+            {
+                question: "O funcionamento do Plenário é regulado por esta Lei, enquanto o funcionamento das Câmaras é regulado apenas pelo Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 66 menciona a Lei e o Regimento Interno para o Plenário. O § 2º do Art. 67 remete a regulação do funcionamento das Câmaras exclusivamente ao Regimento Interno."
+            },
+            {
+                question: "A deliberação para a criação de Câmaras deve contar com o voto favorável de, no mínimo, cinco ministros titulares.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. Sendo o Tribunal composto por nove ministros, a maioria absoluta (primeiro número inteiro superior à metade) é de cinco ministros, conforme exigido pelo Art. 67."
+            },
+            {
+                question: "Uma Câmara pode deliberar sobre a legalidade de um ato de aposentadoria, desde que essa matéria não seja de competência privativa do Plenário.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. A regra geral é que as Câmaras têm competência para julgar, e a exceção, conforme o § 1º do Art. 67, são as matérias de competência privativa do Plenário. Aposentadoria, em regra, é matéria de Câmara."
+            },
+            {
+                question: "O período de recesso do TCU é fixado anualmente por lei específica.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. O Art. 68 estabelece que o recesso é fixado pelo próprio Tribunal 'no Regimento Interno'."
+            },
+            {
+                question: "O Presidente do TCU dirige as sessões do Plenário.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 66 afirma que o Plenário é 'dirigido por seu Presidente'."
+            },
+            {
+                question: "A composição das Câmaras, ou seja, a definição de quais ministros integram cada uma, é matéria a ser regulada no Regimento Interno.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. 'Composição' é um dos itens listados no § 2º do Art. 67 como de regulação via Regimento Interno."
+            },
+            {
+                question: "O Tribunal pode optar por não fixar um período de recesso.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O Art. 68 usa a expressão 'o recesso que entender conveniente', o que confere ao Tribunal a discricionariedade não apenas para definir o período, mas também para decidir sobre a própria existência do recesso."
+            },
+            {
+                question: "As regras de funcionamento do Plenário e das Câmaras são idênticas e estão previstas na Lei Orgânica.",
+                answer: "Errado",
+                rationale: "A assertiva está incorreta. As regras do Plenário estão na Lei e no Regimento (Art. 66), enquanto as das Câmaras estão no Regimento (Art. 67, § 2º). Além disso, suas competências são distintas, o que implica regras de funcionamento também distintas."
+            },
+            {
+                question: "A competência privativa do Plenário é uma limitação à atuação das Câmaras.",
+                answer: "Certo",
+                rationale: "A assertiva está correta. O § 1º do Art. 67 estabelece que as matérias de competência privativa do Plenário não podem ser deliberadas pelas Câmaras, funcionando como uma clara limitação à competência destes órgãos fracionários."
+            },
+            {
+                question: "A continuidade dos trabalhos do Tribunal durante o recesso é uma determinação legal.",
+                answer: "Certo",
+                rationale: "A assertiva está correta, pois é uma condição expressa e obrigatória imposta pela parte final do Art. 68."
+            }
+        ];
+
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const btnCerto = document.getElementById('btn-certo');
+        const btnErrado = document.getElementById('btn-errado');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const scoreEl = document.getElementById('score');
+        const scoreMessageEl = document.getElementById('score-message');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            questionNumberEl.innerText = currentQuestionIndex + 1;
+            questionTextEl.innerText = currentQuestion.question;
+        }
+
+        function resetState() {
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = '';
+            nextBtn.style.display = 'none';
+
+            btnCerto.disabled = false;
+            btnErrado.disabled = false;
+            btnCerto.className = 'btn';
+            btnErrado.className = 'btn';
+        }
+
+        function selectAnswer(selectedAnswer) {
+            btnCerto.disabled = true;
+            btnErrado.disabled = true;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerHTML = `<strong>Correto!</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'correct-feedback';
+            } else {
+                feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
+                feedbackEl.className = 'incorrect-feedback';
+            }
+            
+            // Highlight buttons
+            if (currentQuestion.answer === 'Certo') {
+                btnCerto.classList.add('correct');
+                if (!isCorrect) btnErrado.classList.add('incorrect');
+            } else {
+                btnErrado.classList.add('correct');
+                if (!isCorrect) btnCerto.classList.add('incorrect');
+            }
+
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizBodyEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            restartBtn.style.display = 'inline-block';
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excelente desempenho! Você domina o assunto.';
+            } else if (percentage >= 70) {
+                message = 'Ótimo resultado! Continue revisando os detalhes.';
+            } else if (percentage >= 50) {
+                message = 'Bom esforço. Foco nos pontos que errou para melhorar.';
+            } else {
+                message = 'Continue estudando. A repetição leva à perfeição.';
+            }
+            scoreMessageEl.innerText = message;
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizBodyEl.style.display = 'block';
+            loadQuestion();
+        }
+
+        // Start the quiz
+        loadQuestion();
+    </script>
+
+</body>
+</html>
