@@ -439,7 +439,7 @@
                 rationale: "A assertiva está incorreta. O Art. 61 condiciona a solicitação de arresto aos 'responsáveis julgados em débito', ou seja, a medida é posterior à decisão definitiva que constituiu o débito."
             },
             {
-                question: "A multa do Art. 57 e a do Art. 58 são mutuamente excludentes, não podendo ser aplicadas na mesma decisão.",
+                question: "A multa do Art. 57 e a do Art. 58 são mutuamente excludentes, não podendo ser aplicadas na mesma decidão.",
                 answer: "Errado",
                 rationale: "A assertiva está incorreta. É possível que um responsável seja julgado em débito (o que atrai a multa do Art. 57) e, no mesmo processo, tenha cometido uma infração formal grave, como obstrução à fiscalização (o que atrai a multa do Art. 58). As multas têm fundamentos distintos e podem ser aplicadas cumulativamente."
             },
@@ -526,6 +526,10 @@
             if (currentQuestionIndex > 0) {
                 prevBtn.style.display = 'inline-block';
             }
+
+            // *** MUDANÇA AQUI ***
+            // Mostra o botão "Próxima" imediatamente
+            nextBtn.style.display = 'inline-block';
         }
 
         function resetState() {
@@ -570,7 +574,7 @@
             }
 
             feedbackEl.style.display = 'block';
-            nextBtn.style.display = 'inline-block';
+            nextBtn.style.display = 'inline-block'; // Esta linha agora é redundante, mas inofensiva
             // Re-exibe o botão "Anterior" se aplicável
             if (currentQuestionIndex > 0) {
                 prevBtn.style.display = 'inline-block';
