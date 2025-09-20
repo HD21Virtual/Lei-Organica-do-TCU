@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-R">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ministério Público Junto ao Tribunal</title>
     <style>
@@ -118,9 +118,11 @@
             color: #5c1a1a;
         }
         .navigation {
-            text-align: right;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
         }
-        #next-btn, #restart-btn {
+        #next-btn, #restart-btn, #prev-btn, #restart-wrong-btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
@@ -130,6 +132,20 @@
             cursor: pointer;
             display: none;
         }
+        #prev-btn {
+            background-color: var(--neutral-color);
+        }
+        #prev-btn:hover {
+            background-color: #5a6268;
+        }
+        #restart-wrong-btn {
+            background-color: var(--incorrect-color);
+            margin-left: 10px;
+        }
+        #restart-wrong-btn:hover {
+            background-color: #c82333;
+        }
+
         #results-container {
             text-align: center;
         }
@@ -151,7 +167,7 @@
         </div>
 
         <div id="quiz-body">
-            <p><span id="question-number"></span> de 60</p>
+            <p><span id="question-number"></span> de <span id="total-questions"></span></p>
             <div id="question-text"></div>
             <div class="answer-options">
                 <button class="btn" id="btn-certo" onclick="selectAnswer('Certo')">Certo</button>
@@ -159,7 +175,8 @@
             </div>
             <div id="feedback"></div>
             <div class="navigation">
-                <button id="next-btn" onclick="nextQuestion()">Próxima Questão</button>
+                <button id="prev-btn" onclick="prevQuestion()">&larr; Anterior</button>
+                <button id="next-btn" onclick="nextQuestion()">Próxima &rarr;</button>
             </div>
         </div>
 
@@ -167,13 +184,15 @@
             <h2>Caderno Concluído!</h2>
             <p id="score"></p>
             <p id="score-message"></p>
-            <button id="restart-btn" onclick="restartQuiz()">Refazer Questões</button>
+            <button id="restart-btn" onclick="restartQuiz('all')">Refazer Todas</button>
+            <button id="restart-wrong-btn" onclick="restartQuiz('wrong')">Refazer Erradas</button>
         </div>
 
     </div>
 
     <script>
         const quizData = [
+            // ... (Seus 60 objetos de questão vão aqui. Omitido para economizar espaço)
             {
                 question: "O Ministério Público junto ao Tribunal de Contas da União é composto por um procurador-geral, quatro subprocuradores-gerais e três procuradores.",
                 answer: "Errado",
@@ -477,12 +496,15 @@
         ];
 
         const questionNumberEl = document.getElementById('question-number');
+        const totalQuestionsEl = document.getElementById('total-questions'); // Novo
         const questionTextEl = document.getElementById('question-text');
         const btnCerto = document.getElementById('btn-certo');
         const btnErrado = document.getElementById('btn-errado');
         const feedbackEl = document.getElementById('feedback');
         const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn'); // Novo
         const restartBtn = document.getElementById('restart-btn');
+        const restartWrongBtn = document.getElementById('restart-wrong-btn'); // Novo
         const quizBodyEl = document.getElementById('quiz-body');
         const resultsContainerEl = document.getElementById('results-container');
         const scoreEl = document.getElementById('score');
@@ -490,18 +512,31 @@
 
         let currentQuestionIndex = 0;
         let score = 0;
+        let wrongAnswersList = []; // Novo: Armazena questões erradas
+        let currentQuizData = [...quizData]; // Novo: Armazena o quiz atual (todas ou só erradas)
 
         function loadQuestion() {
             resetState();
-            const currentQuestion = quizData[currentQuestionIndex];
+            const currentQuestion = currentQuizData[currentQuestionIndex];
             questionNumberEl.innerText = currentQuestionIndex + 1;
+            totalQuestionsEl.innerText = currentQuizData.length; // Atualiza o total
             questionTextEl.innerText = currentQuestion.question;
+
+            // Mostra o botão "Anterior" se não for a primeira questão
+            if (currentQuestionIndex > 0) {
+                prevBtn.style.display = 'inline-block';
+            }
+
+            // *** MUDANÇA AQUI ***
+            // Mostra o botão "Próxima" imediatamente
+            nextBtn.style.display = 'inline-block';
         }
 
         function resetState() {
             feedbackEl.style.display = 'none';
             feedbackEl.className = '';
             nextBtn.style.display = 'none';
+            prevBtn.style.display = 'none'; // Esconde o "Anterior" por padrão
 
             btnCerto.disabled = false;
             btnErrado.disabled = false;
@@ -513,7 +548,7 @@
             btnCerto.disabled = true;
             btnErrado.disabled = true;
 
-            const currentQuestion = quizData[currentQuestionIndex];
+            const currentQuestion = currentQuizData[currentQuestionIndex];
             const isCorrect = selectedAnswer === currentQuestion.answer;
 
             if (isCorrect) {
@@ -523,6 +558,10 @@
             } else {
                 feedbackEl.innerHTML = `<strong>Incorreto.</strong> ${currentQuestion.rationale}`;
                 feedbackEl.className = 'incorrect-feedback';
+                // Adiciona a questão à lista de erradas
+                if (!wrongAnswersList.includes(currentQuestion)) {
+                     wrongAnswersList.push(currentQuestion);
+                }
             }
             
             // Highlight buttons
@@ -535,12 +574,22 @@
             }
 
             feedbackEl.style.display = 'block';
-            nextBtn.style.display = 'inline-block';
+            nextBtn.style.display = 'inline-block'; // Esta linha agora é redundante, mas inofensiva
+            // Re-exibe o botão "Anterior" se aplicável
+            if (currentQuestionIndex > 0) {
+                prevBtn.style.display = 'inline-block';
+            }
+        }
+
+        // Nova função para voltar a questão
+        function prevQuestion() {
+            currentQuestionIndex--;
+            loadQuestion();
         }
 
         function nextQuestion() {
             currentQuestionIndex++;
-            if (currentQuestionIndex < quizData.length) {
+            if (currentQuestionIndex < currentQuizData.length) {
                 loadQuestion();
             } else {
                 showResults();
@@ -552,8 +601,13 @@
             resultsContainerEl.style.display = 'block';
             restartBtn.style.display = 'inline-block';
             
-            const percentage = Math.round((score / quizData.length) * 100);
-            scoreEl.innerText = `Você acertou ${score} de ${quizData.length} questões (${percentage}%).`;
+            // Mostra o botão de refazer erradas apenas se houver erros
+            if (wrongAnswersList.length > 0) {
+                restartWrongBtn.style.display = 'inline-block';
+            }
+            
+            const percentage = Math.round((score / currentQuizData.length) * 100);
+            scoreEl.innerText = `Você acertou ${score} de ${currentQuizData.length} questões (${percentage}%).`;
 
             let message = '';
             if (percentage >= 90) {
@@ -568,10 +622,22 @@
             scoreMessageEl.innerText = message;
         }
 
-        function restartQuiz() {
+        // Modificada para aceitar o modo 'all' (todas) ou 'wrong' (erradas)
+        function restartQuiz(mode) {
             currentQuestionIndex = 0;
             score = 0;
+
+            if (mode === 'wrong' && wrongAnswersList.length > 0) {
+                currentQuizData = [...wrongAnswersList];
+            } else {
+                currentQuizData = [...quizData];
+            }
+            
+            // Limpa a lista de erradas para a próxima rodada
+            wrongAnswersList = [];
+            
             resultsContainerEl.style.display = 'none';
+            restartWrongBtn.style.display = 'none'; // Esconde o botão de erradas
             quizBodyEl.style.display = 'block';
             loadQuestion();
         }
